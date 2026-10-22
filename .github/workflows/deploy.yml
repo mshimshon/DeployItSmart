@@ -1,0 +1,192 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Build"] # 👈 Put the EXACT name of your build workflow here
+    types:
+      - completed
+  workflow_dispatch: # Keeps your manual trigger working
+
+concurrency:
+  group: deploy-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      id-token: write
+      actions: write
+      contents: write
+
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
+      
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Checking out Deploy Scripts
+        run: |
+          rm -rf /tmp/deploy_scripting
+          git clone --branch main "https://github.com/mshimshon/deploy_scripting.git" "/tmp/deploy_scripting"
+          # Remove from YOUR pipeline, this is for local development.
+          # Force bash wildcards to include hidden files
+          shopt -s dotglob
+          # Copy and overwrite everything natively
+          cp -Rf "$GITHUB_WORKSPACE"/* /tmp/deploy_scripting/
+          chmod -R +x /tmp/deploy_scripting/
+
+
+      - name: Get Last Version Tag
+        id: get_last_version
+        shell: bash
+        run: |
+          # 1. Run the script directly into a variable and capture the exit code
+          OUTPUT=$(/bin/bash "/tmp/deploy_scripting/utils/gitGetLatestRelease.sh")  || EXIT_CODE=$?
+          EXIT_CODE=$?
+
+          # 2. Handle the explicit exit code requirements
+          if [ $EXIT_CODE -eq 2 ]; then
+            echo "Script returned exit code 2. Soft-handling: workflow will continue."
+          elif [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
+
+          # 3. Clean the string directly from the variable and push it out to the runner environment
+          LATEST_TAG=$(echo "$OUTPUT" | tr -d '\r' | tail -n 1 | xargs)
+          echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate Version
+        id: get_version
+        shell: bash
+        run: |
+          # 1. Retrieve the tag from the independent step output
+          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
+          echo "Log: Found latest tag string -> '$LATEST_TAG'"
+          
+          # 2. Run the script and read its output directly into the current shell process
+          if [ -n "$LATEST_TAG" ]; then
+            echo "Log: Running generateNewVersion.sh with tag option..."
+            VERSION_NUM=$(/bin/bash "/tmp/deploy_scripting/utils/generateNextVersion.sh" -since-tag "$LATEST_TAG" | tail -n 1)
+          else
+            echo "Log: No tag found. Running generateNewVersion.sh from scratch..."
+            VERSION_NUM=$(/bin/bash "/tmp/deploy_scripting/utils/generateNextVersion.sh" | tail -n 1)
+          fi
+          
+          # 3. Check if the script failed (exit code was not 0)
+          if [ ${PIPESTATUS} -ne 0 ]; then
+            echo "::error::Version generation script failed!"
+            exit 1
+          fi
+
+          # 4. If it succeeded, log the output and save it
+          echo "Log: Successfully generated version number -> '$VERSION_NUM'"
+          echo "version=$VERSION_NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Console
+        shell: bash
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          WIN_OUT="/tmp/artifacts/output";
+          LINUX_OUT="/tmp/artifacts/output";
+          mkdir -p "$WIN_OUT"
+          mkdir -p "$LINUX_OUT"
+          dotnet publish "$GITHUB_WORKSPACE/commitCleaner.cs" --self-contained true -r win-x64 -c Release -o "$WIN_OUT" -p:AssemblyName=commit_cleaner_win_x64 -p:DebugSymbols=false -p:DebugType=none -p:PublishSingleFile=true -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
+          dotnet publish "$GITHUB_WORKSPACE/commitCleaner.cs" --self-contained true -r linux-x64 -c Release -o "$LINUX_OUT" -p:AssemblyName=commit_cleaner_linux_x64  -p:DebugSymbols=false -p:DebugType=none -p:PublishSingleFile=true -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
+      
+      - name: Generate Release Notes
+        id: generate_release_notes
+        shell: bash
+        run: |
+          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          OUTPUT="/tmp/artifacts/output"
+          if [ -n "$LATEST_TAG" ]; then
+            /bin/bash "/tmp/deploy_scripting/utils/generateChangelogs.sh" -linkCommits -output "$OUTPUT" -autoFailEmptyResult -autoSplitProject -linkCommits -since-tag "$LATEST_TAG" -version "$VERSION"
+          else
+            /bin/bash "/tmp/deploy_scripting/utils/generateChangelogs.sh" -linkCommits -output "$OUTPUT" -autoFailEmptyResult -autoSplitProject -linkCommits -version "$VERSION"
+          fi
+          CHANGELOG_FILE="$OUTPUT/goodlife_changelog.md"
+          
+          if [ ! -f "$CHANGELOG_FILE" ]; then
+            echo "::error::Required file goodlife_changelog.md was not found in $OUTPUT"
+            exit 1
+          elif [ ! -s "$CHANGELOG_FILE" ]; then
+            echo "::error::The changelog file goodlife_changelog.md exists but it is completely empty!"
+            exit 1
+          fi
+
+          echo "=== CHANGELOG CONTENT START ==="
+          cat "$CHANGELOG_FILE"
+          echo "=== CHANGELOG CONTENT END ==="
+          echo "Changelog successfully generated and verified at $CHANGELOG_FILE"
+
+      - name: Validating Output
+        shell: bash
+        run: |
+          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          OUTPUT="/tmp/artifacts/output"
+
+          echo "Checking directory: $OUTPUT"
+          
+          # 1. Define array of allowed/expected filenames
+          ALLOWED_FILES=(
+            "commit_cleaner_win_x64.exe"
+            "commit_cleaner_linux_x64"
+            "goodlife_changelog.md"
+          )
+
+          # Helper to verify if an item is inside our array
+          contains_file() {
+            local e match="$1"
+            for e in "${ALLOWED_FILES[@]}"; do [[ "$e" == "$match" ]] && return 0; done
+            return 1
+          }
+
+          STATUS=0
+
+          # 2. Check for missing files (Expected but not found)
+          for file in "${ALLOWED_FILES[@]}"; do
+            if [ ! -f "$OUTPUT/$file" ]; then
+              echo "❌ Error: Required file missing -> $file"
+              STATUS=1
+            fi
+          done
+
+          # 3. Check for unrecognized files (Found but not expected)
+          while IFS= read -r -d '' filepath; do
+            filename=$(basename "$filepath")
+            if ! contains_file "$filename"; then
+              echo "❌ Error: Unrecognized file found -> $filename"
+              STATUS=1
+            fi
+          done < <(find "$OUTPUT" -maxdepth 1 -type f -print0)
+
+          # 4. Fail if any checks crashed
+          if [ $STATUS -ne 0 ]; then
+            echo "🚨 Validation failed!"
+            exit 1
+          fi
+
+          echo "✅ Validation passed successfully! Match complete."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          body_path: "/tmp/artifacts/output/goodlife_changelog.md"
+          files: |
+            /tmp/artifacts/output/*
+

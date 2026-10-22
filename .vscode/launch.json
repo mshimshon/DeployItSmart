@@ -1,0 +1,22 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "DeployItSmart (Debug)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/bin/Debug/net10.0/win-x64/DeployItSmart.dll",
+            "args": [
+                "LocalTrashCommitCleanerRunner",
+                "-output",
+                "C:\\Users\\Administrator\\source\\repos\\deploy_scripting\\output_test",
+                "-projects",
+                "src\\DeployItSmart.csproj"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        }
+    ]
+}

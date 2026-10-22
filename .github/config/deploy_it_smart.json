@@ -1,0 +1,44 @@
+﻿{
+  "InitialVersion": "0.0.1",
+  "EmptyLogMessage": "This release has no information.",
+  "FeatureHeader": "New Features",
+  "BreakingHeader": "BREAKING CHANGES",
+  "FixHeader": "Fixes",
+  "NoteHeader": "Notes",
+  "SponsorHeader": "Release Sponsors",
+  "ThanksHeader": "Special Thanks",
+  "Projects": {
+    "_": "My Project Name",
+    "src/DeployItSmart.csproj": "Deploy It Smart"
+  },
+  "ReleaseFeatureTokens": [
+    "feat"
+  ],
+  "ReleaseFixTokens": [
+    "fix"
+  ],
+  "ReleaseBreakingTokens": [
+    "feat!",
+    "break"
+  ],
+  "ReleaseNoteTokens": [
+    "note"
+  ],
+  "ReleaseSponsorTokens": [
+    "sponsor"
+  ],
+  "ReleaseThanksTokens": [
+    "thank"
+  ],
+  "ReleaseDirtyTokens": [
+    "wip"
+  ],
+  "ReleaseNoTriggerTokens": [
+    "trace!"
+  ],
+  "ReleaseNoLogTokens": [
+    "trace"
+  ],
+  "ReleaseLeftSymbol": "",
+  "ReleaseRightSymbol": ":"
+}
