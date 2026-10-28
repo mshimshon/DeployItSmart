@@ -15,6 +15,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    environment:
+      name: production
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
@@ -178,3 +180,29 @@ jobs:
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
             /tmp/artifacts/output/DeployItSmart.${{ steps.get_version.outputs.version }}.nupkg
             /tmp/artifacts/output/_.md
+
+      - name: NuGet login (OIDC → temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push all NuGet packages with retry
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 30
+          max_attempts: 10
+          retry_wait_seconds: 10
+          command: |
+            set -eu
+            VERSION="${{ steps.get_version.outputs.version }}"
+
+            for PKG in /tmp/artifacts/output/*.nupkg; do
+              echo "Pushing $PKG"
+
+              dotnet nuget push \
+                "$PKG" \
+                --api-key ${{ steps.login.outputs.NUGET_API_KEY }} \
+                --source https://api.nuget.org/v3/index.json \
+                --skip-duplicate || exit 1
+            done
