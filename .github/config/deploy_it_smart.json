@@ -8,8 +8,7 @@
   "SponsorHeader": "Release Sponsors",
   "ThanksHeader": "Special Thanks",
   "Projects": {
-    "_": "My Project Name",
-    "src/DeployItSmart.csproj": "Deploy It Smart"
+    "_": "Deploy It Smart"
   },
   "ReleaseFeatureTokens": [
     "feat"

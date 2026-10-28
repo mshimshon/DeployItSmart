@@ -17,6 +17,13 @@ public record class ToolConfiguration
     {
         {"_","My Project Name"}
     };
+
+    // Keep it simple but you can set post processing applies to all messages {this} = tag value
+    // @username -> Link github username
+    public Dictionary<string, string> TagMarkdown { get; init; } = new()
+    {
+        {"@","[{this}](https://github.com/{this})"}
+    };
     // Core feature delivery tokens. Triggers standard minor semantic version increases.
     public IReadOnlyList<string> ReleaseFeatureTokens { get; init; } = new[] { "feat" };
 

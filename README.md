@@ -3,8 +3,6 @@
 [![NuGet Version](https://img.shields.io/nuget/v/DeployItSmart)](https://www.nuget.org/packages/DeployItSmart)
 [![](https://img.shields.io/nuget/dt/DeployItSmart?label=Downloads)](https://www.nuget.org/packages/DeployItSmart)
 [![Build](https://github.com/mshimshon/deploy_scripting/actions/workflows/build.yml/badge.svg)](https://github.com/mshimshon/deploy_scripting/actions/workflows/build.yml)
-
-
 [![Deploy](https://github.com/mshimshon/deploy_scripting/actions/workflows/deploy.yml/badge.svg)](https://github.com/mshimshon/deploy_scripting/actions/workflows/deploy.yml)
 
 
@@ -174,3 +172,94 @@ To activate it activate the scripts, create `.git/hooks/post-commit` you must ru
 
 In Git Bash, make the hook executable with `chmod +x .git/hooks/pre-push`. Git runs it before each push; a nonzero exit from the helper blocks the push, allowing you to address any issues first. Hooks are local to each clone and are not shared automatically, so each contributor must install the hook in their own checkout.
 
+
+
+## Workflow Example
+```yaml
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      id-token: write
+      contents: read
+    if: >-
+      !contains(github.event.head_commit.message, 'trace!') &&
+      !contains(github.event.workflow_run.head_commit.message, 'trace!')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Installing Deploy It Smart
+        run: |
+          dotnet tool install -g DeployItSmart
+
+      - name: Get Last Version Tag
+        id: get_last_version
+        shell: bash
+        run: |
+          # 1. Run the command and capture the text output
+          OUTPUT=$(depitsmart GetCurrentReleaseVersionRunner) || EXIT_CODE=$?
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
+            exit "$EXIT_CODE"
+          fi
+          LATEST_TAG=$(echo "$OUTPUT" | tr -d '\r' | tail -n 1 | xargs)
+          echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate Version
+        id: get_version
+        shell: bash
+        run: |
+          OUTPUT=$(depitsmart CalculateNextReleaseVersionRunner) || EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
+          echo "Log: Successfully generated version number -> '$OUTPUT'"
+          echo "version=$OUTPUT" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Release Notes
+        id: generate_release_notes
+        shell: bash
+        run: |
+          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
+          OUTPUT="/tmp/artifacts/output"
+          depitsmart GenerateChangeLogRunner -output "$OUTPUT" -linkCommits
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
+            exit $EXIT_CODE
+          fi
+
+          CHANGELOG_FILE="$OUTPUT/_.md"
+
+          if [ ! -f "$CHANGELOG_FILE" ]; then
+            echo "::error::Required file _.md was not found in $OUTPUT"
+            exit 1
+          elif [ ! -s "$CHANGELOG_FILE" ]; then
+            echo "::error::The changelog file _.md exists but it is completely empty!"
+            exit 1
+          fi
+
+```

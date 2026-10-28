@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Xml.Schema;
 using DeployItSmart.Engine.ArgumentParser;
 using DeployItSmart.Engine.Runner;
@@ -26,6 +27,7 @@ public class GenerateChangeLogRunner : BaseRunner
 
     public MessageSearchTool MessageTool { get; init; }
     public GenerateChangeLogConf Configuration { get; init; }
+    Dictionary<string, string> _replacePattern { get; init; } = new();
     public GenerateChangeLogRunner(SimpleArgumentParser simpleArgument)
     {
         CalculateNextReleaseVersion = new CalculateNextReleaseVersionRunner(simpleArgument);
@@ -33,6 +35,7 @@ public class GenerateChangeLogRunner : BaseRunner
         MessageTool = new MessageSearchTool();
         Configuration = new GenerateChangeLogConf(simpleArgument);
         CurrentReleaseVersion = new GetCurrentReleaseVersionRunner(simpleArgument);
+        _replacePattern = MessageTool.ToolConfig.Configuration.TagMarkdown.ToDictionary(p => $@"(?<=\s|^)({Regex.Escape(p.Key)})(\w+)", p => p.Value);
     }
 
     public override async Task RunAsync()
@@ -79,14 +82,29 @@ public class GenerateChangeLogRunner : BaseRunner
             .Select(p =>
             {
                 if (Configuration.IncludeCommitLinks)
-                    return new MdListItem(new MdRawMarkdownSpan(p.CommitMessage), " ", new MdLinkSpan(p.CommitId.Substring(0, 6), GetCommitLink(p)));
+                    return new MdListItem(new MdRawMarkdownSpan(ProcessSpecialTags(p.CommitMessage)), " ", new MdLinkSpan(p.CommitId.Substring(0, 6), GetCommitLink(p)));
                 else
-                    return new MdListItem(new MdRawMarkdownSpan(p.CommitMessage));
+                    return new MdListItem(new MdRawMarkdownSpan(ProcessSpecialTags(p.CommitMessage)));
             }).ToList();
         return section;
     }
 
-
+    public string ProcessSpecialTags(string data)
+    {
+        string unclean = data;
+        foreach (var pattern in _replacePattern)
+        {
+            var matches = Regex.Matches(unclean, pattern.Key);
+            if (matches.Count <= 0) continue;
+            foreach (Match match in matches)
+            {
+                var value = match.Groups[2].Value;
+                var replaceWith = pattern.Value.Replace("{this}", value);
+                unclean = unclean.Replace(match.Groups[0].Value, replaceWith);
+            }
+        }
+        return unclean;
+    }
     private Dictionary<string, string> AssociateFilesToProjects()
     {
         Dictionary<string, string> fileToProjectAssociated = new();
