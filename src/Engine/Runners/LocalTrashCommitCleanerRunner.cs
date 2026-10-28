@@ -105,13 +105,14 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
             foreach (var wip in lastCommit.TokenDirtyMessages[TrackerDirtyType.WorkInProgress])
                 nMessages.Add(AddDirtyTokenToMessage(TrackerDirtyType.WorkInProgress, wip));
 
+        if (lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].Count > 0)
+            nMessages.Add(AddDirtyTokenToMessage(TrackerDirtyType.TraceNoTrigger, lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].First()));
+
         var nCommitMessage = string.Join("\n", nMessages);
         if (string.IsNullOrWhiteSpace(nCommitMessage))
             throw new Exception("Couldn't extract messages.");
 
-        bool skipci = false;
-        if (lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].Count > 0)
-            skipci = true;
+
         repo.Reset(ResetMode.Mixed, commit);
         Commands.Stage(repo, "*");
         var cleanCommit = repo.Commit(nCommitMessage, commit.Author, commit.Author, new()
@@ -120,11 +121,7 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
             PrettifyMessage = true
         });
 
-        if (skipci)
-        {
-            System.Console.WriteLine("Trace No Trigger on Head, Skip CI");
-            repo.ApplyTag("skipci");
-        }
+
         System.Console.WriteLine($"New Commit with work {cleanCommit.Message}");
         System.Console.WriteLine($"New Commit SHA-1 ID: {cleanCommit.Id.Sha}");
         System.Console.WriteLine($"Committed by: {cleanCommit.Committer.Name} at {cleanCommit.Committer.When}");
