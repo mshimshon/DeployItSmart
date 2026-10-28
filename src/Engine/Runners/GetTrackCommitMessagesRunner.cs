@@ -84,6 +84,8 @@ public class GetTrackCommitMessagesRunner : BaseRunner
             ProcessDuplicateTrackItem(TrackerReleaseType.Feature, uncleanItem.TokenMessages, ref processedTokens, ref cleanedTokenMessages);
             ProcessDuplicateTrackItem(TrackerReleaseType.Fix, uncleanItem.TokenMessages, ref processedTokens, ref cleanedTokenMessages);
             ProcessDuplicateTrackItem(TrackerReleaseType.Note, uncleanItem.TokenMessages, ref processedTokens, ref cleanedTokenMessages);
+            ProcessDuplicateTrackItem(TrackerReleaseType.Thanks, uncleanItem.TokenMessages, ref processedTokens, ref cleanedTokenMessages);
+            ProcessDuplicateTrackItem(TrackerReleaseType.Sponsor, uncleanItem.TokenMessages, ref processedTokens, ref cleanedTokenMessages);
             cleanedData.Add(cleanedItem with
             {
                 TokenMessages = cleanedTokenMessages
