@@ -78,20 +78,18 @@ You can install the tool using dotnet CLI:
 
 `dotnet tool install -g DeployItSmart`
 
+You chould setup post-commit processing script.
+
+`.git/hooks/post-commit`
 ```bash
-    #!/bin/sh
-    dotnet tool install -g DeployItSmart
-    depitsmart LocalTrashCommitCleanerRunner
-```
-
-To activate it automatically before pushes, create `.git/hooks/pre-push` in your local clone with this Git Bash hook:
-
-
-```sh
 #!/bin/sh
-repo_root="$(git rev-parse --show-toplevel)"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo_root/prePushUtility.ps1"
+dotnet tool install -g DeployItSmart
+depitsmart LocalTrashCommitCleanerRunner
 ```
+
+To activate it activate the scripts, create `.git/hooks/post-commit` you must run the command:
+
+`git config core.hooksPath .git/hooks`
 
 In Git Bash, make the hook executable with `chmod +x .git/hooks/pre-push`. Git runs it before each push; a nonzero exit from the helper blocks the push, allowing you to address any issues first. Hooks are local to each clone and are not shared automatically, so each contributor must install the hook in their own checkout.
 

@@ -22,6 +22,8 @@ public class GenerateChangeLogRunner : BaseRunner
     };
     public CalculateNextReleaseVersionRunner CalculateNextReleaseVersion { get; init; }
     public GetTrackCommitMessagesRunner GetTrackCommitMessages { get; init; }
+    public GetCurrentReleaseVersionRunner CurrentReleaseVersion { get; init; }
+
     public MessageSearchTool MessageTool { get; init; }
     public GenerateChangeLogConf Configuration { get; init; }
     public GenerateChangeLogRunner(SimpleArgumentParser simpleArgument)
@@ -30,6 +32,7 @@ public class GenerateChangeLogRunner : BaseRunner
         GetTrackCommitMessages = new GetTrackCommitMessagesRunner(simpleArgument);
         MessageTool = new MessageSearchTool();
         Configuration = new GenerateChangeLogConf(simpleArgument);
+        CurrentReleaseVersion = new GetCurrentReleaseVersionRunner(simpleArgument);
     }
 
     public override async Task RunAsync()
@@ -189,8 +192,9 @@ public class GenerateChangeLogRunner : BaseRunner
 
     public async Task GenerateChangelog()
     {
+        var currentVersion = await CurrentReleaseVersion.GetCurrentTag();
         var nextVersion = await CalculateNextReleaseVersion.GetNextVersion();
-        var commits = await GetTrackCommitMessages.GetHistory(GetTrackCommitMessages.GetCommitInfoSince.Configuration.SinceTag);
+        var commits = await GetTrackCommitMessages.GetHistory(currentVersion?.ToString(3) ?? default);
         // Get Structure commit and transform to reguler commit structure one message per commit per type then process
         Dictionary<TrackerReleaseType, List<CommitInfoStructure>> newCommits = new()
         {

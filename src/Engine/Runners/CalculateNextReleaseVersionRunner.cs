@@ -41,7 +41,7 @@ public class CalculateNextReleaseVersionRunner : BaseRunner
             return new System.Version(MessageTool.ToolConfig.Configuration.InitialVersion);
 
         var nextVersion = currentVersion;
-        var commits = await GetTrackCommitMessages.GetHistory(GetTrackCommitMessages.GetCommitInfoSince.Configuration.SinceTag);
+        var commits = await GetTrackCommitMessages.GetHistory(currentVersion.ToString(3));
         var breaking = commits.SelectMany(p => p.TokenMessages[Model.DataStructure.Enums.TrackerReleaseType.Breaking]).Count();
         var feature = commits.SelectMany(p => p.TokenMessages[Model.DataStructure.Enums.TrackerReleaseType.Feature]).Count();
         if (breaking > 0)
