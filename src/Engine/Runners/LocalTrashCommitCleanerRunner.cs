@@ -71,7 +71,8 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
                     resetPoint = item;
                 else
                 {
-                    resetPoint = item;
+                    if (resetPoint != default)
+                        resetPoint = item;
                     break;
                 }
             foreach (var itemTokens in item.TokenMessages)
