@@ -69,12 +69,12 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
         foreach (var item in commits)
         {
             if (item != lastCommit)
-                if (item.CountReleaseToken() <= 0)
+                if (item.CountReleaseToken() <= 0 || item.CountDirtyToken() > 0)
                     resetPoint = item;
                 else
                 {
-                    if (resetPoint != default)
-                        resetPoint = item;
+                    // if (resetPoint != default)
+                    //     resetPoint = item;
                     break;
                 }
             foreach (var itemTokens in item.TokenMessages)
@@ -115,16 +115,18 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
 
         repo.Reset(ResetMode.Mixed, commit);
         Commands.Stage(repo, "*");
-        var cleanCommit = repo.Commit(nCommitMessage, commit.Author, commit.Author, new()
+        var committer = repo.Config.BuildSignature(DateTimeOffset.Now);
+        var cleanCommit = repo.Commit(nCommitMessage, committer, committer, new()
         {
             AllowEmptyCommit = true,
-            PrettifyMessage = true
+            AmendPreviousCommit = true,
+            PrettifyMessage = true,
         });
 
 
-        System.Console.WriteLine($"New Commit with work  {cleanCommit.Message}");
-        System.Console.WriteLine($"New Commit SHA-1 ID: {cleanCommit.Id.Sha}");
-        System.Console.WriteLine($"Committed by: {cleanCommit.Committer.Name} at {cleanCommit.Committer.When}");
+        // System.Console.WriteLine($"New Commit with work  {cleanCommit.Message}");
+        // System.Console.WriteLine($"New Commit SHA-1 ID: {cleanCommit.Id.Sha}");
+        // System.Console.WriteLine($"Committed by: {cleanCommit.Committer.Name} at {cleanCommit.Committer.When}");
     }
 
     private string AddReleaseTokenToMessage(TrackerReleaseType tokenType, string message)
