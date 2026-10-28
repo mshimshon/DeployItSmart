@@ -20,7 +20,6 @@ public sealed record class GenerateChangeLogConf
                 throw new Exception($"-output directory must exist '{output}'.");
             else
                 OutputLogs = Path.GetFullPath(output);
-        string? projects = simpleArgumentParser.GetOptionalOption("-projects");
 
         FailOnEmpty = simpleArgumentParser.CheckOptionalFlag("-autoFailEmptyResult");
         IncludeCommitLinks = simpleArgumentParser.CheckOptionalFlag("-linkCommits");

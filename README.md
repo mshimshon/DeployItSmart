@@ -1,74 +1,157 @@
 # Deploy scripting utilities
 
-These utilities automate release preparation from Git commit history. They classify commit messages using configured release tokens, calculate the next semantic version, and produce Markdown changelog entries. They can be run locally or from GitHub Actions.
+[![Discord](https://img.shields.io/badge/Discord-Join-6A0DAD?logo=discord&logoColor=white)](https://discord.gg/DMegAnGyJv)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mshimshon/deploy_scripting/blob/main/LICENSE)
+[![NuGet Version](https://img.shields.io/nuget/v/DeployItSmart)](https://www.nuget.org/packages/DeployItSmart)
+[![](https://img.shields.io/nuget/dt/DeployItSmart?label=Downloads)](https://www.nuget.org/packages/DeployItSmart)
+[![Build](https://github.com/mshimshon/deploy_scripting/actions/workflows/build.yml/badge.svg)](https://github.com/mshimshon/deploy_scripting/actions/workflows/build.yml)
 
-## Utilities
 
-- `utils/generateNextVersion.sh` prints the next `MAJOR.MINOR.PATCH` version to standard output. Breaking-change, feature, and fix tokens determine the version increment.
-- `utils/generateChangelogs.sh` generates changelog entries. It requires `-output <directory>` and also supports `-onlyProject <path>`, `-autoSplitProject`, `-autoFailEmptyResult`, and `-linkCommits`.
-- `utils/gitGetCommitSince.sh` gathers commits and changed files since a local Git reference.
-- `utils/gitGetTrackTokenList.sh` classifies commit messages with configured tokens and maps changes to detected projects.
-- `prePushUtility.ps1` is a PowerShell helper for checking and consolidating commit messages before pushing.
+[![Deploy](https://github.com/mshimshon/deploy_scripting/actions/workflows/deploy.yml/badge.svg)](https://github.com/mshimshon/deploy_scripting/actions/workflows/deploy.yml)
 
-## Changelog generation
 
-Run `utils/generateChangelogs.sh -output <directory>` to create Markdown changelog files from classified commits. Each file starts with `# Changelog` and includes sections for configured feature, breaking-change, fix, and note headings. Entries are labeled `Feature:`, `Breaking:`, `Fix:`, or `Note:`. Use `-linkCommits` to include commit links; this requires a reachable `origin` remote.
+# DeployItSmart
 
-For example, with matching configured headings, output can look like:
+**DeployItSmart** is a lightweight, convention-driven .NET global tool designed to automate versioning, changelog generation, and Git history cleanup for simple single- or multi-project repositories. By parsing standardized commit message tokens (such as `feat:`, `fix:`, or `wip:`), it dynamically calculates the next release version and builds targeted changelogs while keeping deployment workflows fast and uncomplicated.
 
-```markdown
-# Changelog
+### Key Features
+* **Automated Versioning:** Automatically calculates and increments major, minor, or patch release versions based on structured commit message prefixes.
+* **Smart Changelogs:** Generates clean markdown release notes supporting unified root logs or path-segregated multi-project scopes within a single repository.
+* **History Sanitization:** Features built-in local utilities to clean up and squash temporary or "dirty" work-in-progress tokens before pushing history.
+* **CI/CD Ready:** Optimized for GitHub Actions integration with support for custom configuration templates and workflow-blocking tokens.
 
-## Features
-- Feature: add export option
 
-## Fixes
-- Fix: handle empty input
+## Installation
+```
+    dotnet tool install -g DeployItSmart
 ```
 
-By default, entries are written to the global changelog file named by `globalChangelogName`. With `-autoSplitProject`, entries associated with detected projects are added to each project's `<project-name>.md` file and grouped under the project name in the global changelog. Entries without a detected project remain only in the global file. Use `-onlyProject <path>` to filter to one project and write to that project's file instead of splitting output. Empty headings are removed after generation.
+## How to Use
 
-For a monorepo, treat the global changelog as the main release changelog: the main release is always produced. Project changelog files identify which subprojects had detected changes, so a build or release action can discover the affected project names from the generated files and decide which subprojects to release. Subprojects follow the same versioning rules as the main release, but their releases are optional and can be skipped when no relevant changes were detected. These scripts generate changelogs; the build or release action is responsible for making and applying that per-project release decision.
-
-Each configured release category can have multiple token patterns or aliases. The classifier evaluates feature, breaking, fix, and note patterns independently; therefore, a commit matching multiple categories can appear in multiple changelog sections. Matching commits are accumulated under their corresponding headings. Configure token patterns and headings in `config.sh` or override supported settings in `.github/config/deploy_utils.json`.
-
-The Bash scripts require Bash, Git, and `jq`, and run from a Git checkout. Configure the tracking branch, initial version, project extensions, release tokens, and changelog headings in `config.sh`. Supported values can also be overridden in `.github/config/deploy_utils.json`. Commit messages should follow the configured token conventions.
-
-## Commit tokens
-
-By default, `config.sh` uses `feat` and `feature` for minor releases, `fix`, `patch`, and `bugfix` for patch releases, and `feat!`, `break`, and `breaking` for major releases. These defaults can be overridden in `.github/config/deploy_utils.json`; check the active configuration before choosing a token. The configured right-hand delimiter is `:`, so the examples use forms such as `feat: ...` and `breaking: ...`.
-
-The version outcomes below assume the current version is `1.4.2` and only the shown commit is being evaluated. Any commit that triggers the workflow results in at least a patch bump; a commit that suppresses the workflow does not cause a workflow version bump.
-
-```text
-git commit -m "breaking: remove legacy config support"
-# Expected: breaking change; next version is 2.0.0 (major bump).
-
-git commit -m "feat: add export option"
-# Expected: feature; next version is 1.5.0 (minor bump).
-
-git commit -m "fix: handle empty input"
-# Expected: fix; next version is 1.4.3 (patch bump).
-
-git commit -m "note: update migration guidance"
-# Expected: release annotation; because the workflow runs, the version bumps at least to 1.4.3.
-
-git commit -m "clarify setup instructions"
-# Expected: treated as dirty/trash WIP; blocked from protected branches by the pre-push checks.
-
-git commit -m "trace: adjust internal diagnostics"
-# Expected: pipeline evaluation runs and the version bumps at least to 1.4.3, but this change is omitted from changelogs.
-
-git commit -m "trace!: update generated metadata"
-# Expected: if `trace!` is on the latest commit when the pre-push helper runs, it applies a `skipci` tag; otherwise, no tag is applied. With CI/CD configured to honor the tag, the action workflow is skipped, so there is no workflow version bump.
-
-git commit -m "wip: draft deployment changes"
-# Expected: configured dirty token; blocked from protected branches by the pre-push checks.
+- `GetTrackCommitMessagesRunner` to print the commit tracked messages json object array
+```bash
+depitsmart GetTrackCommitMessagesRunner # All since first commit (Dangerous if massive amount of commit in long lived projects.)
+depitsmart GetTrackCommitMessagesRunner -sinceTag "1.0.0" # All since the v1.0.0 tag.
+depitsmart GetTrackCommitMessagesRunner -keepDuplicate -sinceTag "1.0.0" # All since the v1.0.0 tag. remove all duplicate token:message from output.
 ```
 
-The other default tokens include `note` for release annotations, `action!` as a no-trigger token, `action` as a changelog-omission token, and `work` as a dirty/WIP token. Use the release-version tokens only when their category matches the change. In general, avoid using the configured delimiter in commit messages except to separate a configured token from its description; the default delimiter is `:`. Merely mentioning a token string in ordinary text does not make it a token. Before publishing, review the generated version and changelog to verify the classification.
+- `GetCommitInfoSinceRunner` to print commit infomation in json array since the begining
+```bash
+depitsmart GetCommitInfoSinceRunner # All since first commit (Dangerous if massive amount of commit in long lived projects.)
+depitsmart GetCommitInfoSinceRunner -sinceTag "1.0.0" # All since the v1.0.0 tag.
+depitsmart GetCommitInfoSinceRunner -sinceTag "1.0.0" # All since the v1.0.0 tag. remove all duplicate token:message from output.
+```
 
-To use tokens safely, match the category to the actual impact, spell the token exactly as configured, and keep the commit message clear and focused. Avoid using the configured delimiter (`:` by default) unless it is separating a configured token from its description. Before publishing, review the generated version and changelog to verify that the commits were classified as intended.
+- `GenerateChangeLogRunner` generate changelogs based on commit from the last v
+```bash
+depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" # Generate log output _.md since the last v tag
+depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" -autoFailEmptyResult # Exit 1 if the changelog is empty otherwise it generates empty changelog with message.
+depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" -linkCommits # add link on each changes in log to its commit.
+```
+
+- `CalculateNextReleaseVersionRunner` print the next version based on commit changes fsince last v tag fails if no changes.
+```bash
+depitsmart CalculateNextReleaseVersionRunner
+```
+
+- `GenerateCustomConfigRunner` creates the user configuration file `.github/config/deploy_it_smart.json` with default parameters.
+```bash
+depitsmart GenerateCustomConfigRunner
+```
+
+- `GetCurrentReleaseVersionRunner` return the current latest v tag version.
+```bash
+depitsmart GetCurrentReleaseVersionRunner
+```
+
+- `LocalTrashCommitCleanerRunner` Clean current commit history from dirty token squashing everything this command is used in our post-commit clean up script.
+```bash
+# WARNING any working branch pushing dirty commit wip:, trace or trace! will requires a force push because we rewrite history and that history was pushed before clean token appeared
+# it will be not possible to push therefore if this occur, do not pull, force push using:
+# git fetch origin && git push --force-with-lease origin main
+# this will push and destroy dirty remote history it is NOT recommended on multi user branch, DO NOT PERFORM on Master branch it's dangerous and unsecure.
+# RECOMMENDED: Never push wip tokens, only push when reaching release token feat: feat!: fix:.... this will cause hisotry to be rewritten locally without future push issues.
+depitsmart LocalTrashCommitCleanerRunner
+```
+
+## Supported Commit Track Messages
+### Release Tokens (Default)
+- `feat!:` = Breaking Change. (Cause Next Version Major Increase)
+- `feat:` = New Feature Non-Breaking. (Cause Next Version Minor Increase)
+- `fix:` = Fix (Non-Breaking). (Cause Next Version Patch Increase)
+- `note:` = Release note (Non-Breaking). (Cause Next Version Patch Increase)
+- `sponsor:` = Sponsor Note for the release, good to recongnize direct sponsor for the release. (Cause Next Version Patch Increase) (use `@GITHUB_USERNAME` to have changelog generator link the sponsor to gh user)
+- `thank:` = Thank you Note. (Cause Next Version Patch Increase) (use `@GITHUB_USERNAME` to have changelog generator link the thank you to gh user)
+### Dirty Tokens (Default)
+- `wip:` = dirty work in progress should never be push but if it is somehow -> (Cause Next Version Patch Increase)
+- `trace:` = will be squashed unless in head commit and will cause workflow trigger without appearing in changelog -> (Cause Next Version Patch Increase)
+- `trace!:` = will be squashed unless in head commit and will should NOT trigger workflow if properly configured -> (Cause Next Version Patch Increase)
+
+This should block workflow if head commit reaching branch has trace!... its only useful to push changes into main branch directly such as readme updates or non-release updates.
+```yaml
+    if: >-
+      !contains(github.event.head_commit.message, 'trace!') &&
+      !contains(github.event.workflow_run.head_commit.message, 'trace!')
+```
+
+## Version System
+The version system is quite simple using `1.1.1` pattern and forget about complex `1.0.0-alpha+build` i explored the possibility but failed to see the point.
+This tool is design to help maintain packages and projects that are simple and not design for complex build/version systems.
+| Token           | Version Change | Example          |
+| --------------- | -------------- | ---------------- |
+| `feat!:`        | MAJOR          | `1.0.0 -> 2.0.0` |
+| `feat!:`        | MINOR          | `1.0.0 -> 1.1.0` |
+| `feat!:`        | PATCH          | `1.0.0 -> 1.0.1` |
+| `feat!:`        | PATCH          | `1.0.0 -> 1.0.1` |
+| `fix:`          | PATCH          | `1.0.0 -> 1.0.1` |
+| `note:`         | PATCH          | `1.0.0 -> 1.0.1` |
+| `sponsor:`      | PATCH          | `1.0.0 -> 1.0.1` |
+| `thank:`        | PATCH          | `1.0.0 -> 1.0.1` |
+| `wip:`          | PATCH          | `1.0.0 -> 1.0.1` |
+| `trace:`        | PATCH          | `1.0.0 -> 1.0.1` |
+| `trace!:`       | PATCH          | `1.0.0 -> 1.0.1` |
+| `anything else` | PATCH          | `1.0.0 -> 1.0.1` |
+
+## Multi-Project Setup
+
+The multi-project setup is an advanced feature that allows you to generate segregated changelogs for different sub-projects within a single repository by defining their file paths and friendly names in the configuration file.
+
+### Configure
+```json
+  "Projects": {
+    "_": "My Project Name", // ROOT main log
+    "src/DeployItSmart.csproj": "Deploy It Smart" // Specific Sub Project FILE
+  },
+
+```
+### How It Works
+
+During changelog generation, every commit is analyzed based on the files it modifies:
+* **Project-Specific Scoping:** If a modified file falls under a defined project path (e.g., `src/myproject/`), that entire commit's release tokens are assigned to that project.
+* **Segregated Output:** Changes targeting `src/myproject/` are written to a dedicated `myproject.md` file. All remaining unassigned changes are routed to a fallback `_.md` file.
+* **Unified Main Changelog:** The main repository changelog automatically aggregates these files, displaying structured headers for each defined sub-project.
+
+### Release Strategy & Versioning
+
+To keep system complexity low, **all projects share a single, global version number**. This tool does not support independent versioning per project.
+
+However, you can use conditional deployments (such as GitHub Actions) to skip releases for specific projects if their dedicated changelog is empty:
+
+1. If a commit contains no changes for `myproject`, the `myproject.md` file will not be generated.
+2. Your CI/CD workflow can detect this missing file and skip the deployment tag (e.g., `myproject-v$VERSION`) for that specific release.
+3. The next time `myproject` receives an update, it will simply jump to the current global version number.
+
+### The Problem This Solves (Our Edge Case)
+
+This feature was built to solve a highly specific architecture bottleneck and may not apply to standard repository setups.
+
+**The exact scenario it was created for:**
+We maintain multiple console applications inside a single repository because they all share a core, global library project. We wanted to avoid the overhead of managing 100 separate repositories for 100 individual console apps.
+
+Because our runtime environment dynamically fetches these console applications via API at runtime, we only needed a system that filters for the most recent `[consolename]-v*` tag pattern to pull the latest version. This setup allows the single repository to react only to the specific console apps that actually changed, skipping the rest while maintaining global version alignment.
+
+*Note: If your sub-projects require entirely independent version histories, they should be moved into their own dedicated repositories.*
+
 
 ## Git Post-Commit
 
@@ -78,20 +161,18 @@ You can install the tool using dotnet CLI:
 
 `dotnet tool install -g DeployItSmart`
 
+You chould setup post-commit processing script.
+
+`.git/hooks/post-commit`
 ```bash
-    #!/bin/sh
-    dotnet tool install -g DeployItSmart
-    depitsmart LocalTrashCommitCleanerRunner
-```
-
-To activate it automatically before pushes, create `.git/hooks/pre-push` in your local clone with this Git Bash hook:
-
-
-```sh
 #!/bin/sh
-repo_root="$(git rev-parse --show-toplevel)"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$repo_root/prePushUtility.ps1"
+dotnet tool install -g DeployItSmart
+depitsmart LocalTrashCommitCleanerRunner
 ```
+
+To activate it activate the scripts, create `.git/hooks/post-commit` you must run the command:
+
+`git config core.hooksPath .git/hooks`
 
 In Git Bash, make the hook executable with `chmod +x .git/hooks/pre-push`. Git runs it before each push; a nonzero exit from the helper blocks the push, allowing you to address any issues first. Hooks are local to each clone and are not shared automatically, so each contributor must install the hook in their own checkout.
 

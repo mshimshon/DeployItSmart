@@ -122,7 +122,7 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
         });
 
 
-        System.Console.WriteLine($"New Commit with work {cleanCommit.Message}");
+        System.Console.WriteLine($"New Commit with work  {cleanCommit.Message}");
         System.Console.WriteLine($"New Commit SHA-1 ID: {cleanCommit.Id.Sha}");
         System.Console.WriteLine($"Committed by: {cleanCommit.Committer.Name} at {cleanCommit.Committer.When}");
     }
