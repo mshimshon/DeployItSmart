@@ -62,49 +62,59 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
             [TrackerDirtyType.WorkInProgress] = new List<string>(),
         };
 
-        TrackedCommitMessageStructure? capturePoint = default;
+        TrackedCommitMessageStructure? resetPoint = default;
         var commits = history.ToList();
-        commits.Reverse();
         foreach (var item in commits)
         {
-            if (capturePoint == default && item.CountDirtyToken() <= 0 && item.CountReleaseToken() > 0)
-                continue;
-            if (capturePoint == default) capturePoint = item;
+            if (item != lastCommit)
+                if (item.CountReleaseToken() <= 0)
+                    resetPoint = item;
+                else
+                {
+                    resetPoint = item;
+                    break;
+                }
             foreach (var itemTokens in item.TokenMessages)
             {
                 var toAdd = itemTokens.Value.Where(p => !tokenMessages[itemTokens.Key].Contains(p, StringComparer.OrdinalIgnoreCase))
                     .Select(p => AddReleaseTokenToMessage(itemTokens.Key, p));
                 tokenMessages[itemTokens.Key].AddRange(toAdd);
             }
-            if (capturePoint != default && item.CountDirtyToken() > 0)
-                foreach (var itemTokens in item.TokenDirtyMessages)
-                {
-                    var toAdd = itemTokens.Value.Where(p => !tokenDirtyMessages[itemTokens.Key].Contains(p, StringComparer.OrdinalIgnoreCase))
-                        .Select(p => AddDirtyTokenToMessage(itemTokens.Key, p));
-                    tokenDirtyMessages[itemTokens.Key].AddRange(toAdd);
-                }
+            foreach (var itemTokens in item.TokenDirtyMessages)
+            {
+                var toAdd = itemTokens.Value.Where(p => !tokenDirtyMessages[itemTokens.Key].Contains(p, StringComparer.OrdinalIgnoreCase))
+                    .Select(p => AddDirtyTokenToMessage(itemTokens.Key, p));
+                tokenDirtyMessages[itemTokens.Key].AddRange(toAdd);
+            }
+
         }
-        if (capturePoint == default)
+        if (resetPoint == default || resetPoint == lastCommit)
         {
-            System.Console.Error.WriteLine("No capturePoint Commit Found");
+            System.Console.Error.WriteLine("No Reset Required Yet.");
             return;
         }
 
         var repo = new Repository(Path.Combine(Environment.CurrentDirectory));
-        var commit = repo.Commits.First(p => p.Id.Sha == capturePoint.CommitId);
+        var commit = repo.Lookup<Commit>(resetPoint.CommitId); ;
+
         var nMessages = tokenMessages.SelectMany(p => p.Value).ToList();
         if (lastCommit.TokenDirtyMessages[TrackerDirtyType.WorkInProgress].Count > 0)
             foreach (var wip in lastCommit.TokenDirtyMessages[TrackerDirtyType.WorkInProgress])
                 nMessages.Add(AddDirtyTokenToMessage(TrackerDirtyType.WorkInProgress, wip));
 
         var nCommitMessage = string.Join("\n", nMessages);
-        repo.Reset(ResetMode.Soft, commit);
-        CommitOptions commitOptions = new CommitOptions
+        if (string.IsNullOrWhiteSpace(nCommitMessage))
+            throw new Exception("Couldn't extract messages.");
+        repo.Reset(ResetMode.Mixed, commit);
+        Commands.Stage(repo, "*");
+        var cleanCommit = repo.Commit(nCommitMessage, commit.Author, commit.Author, new()
         {
-            AmendPreviousCommit = true
-        };
-        repo.Commit(nCommitMessage, commit.Author, commit.Committer, commitOptions);
-        System.Console.WriteLine($"New Commit with work {nCommitMessage}");
+            AllowEmptyCommit = true,
+            PrettifyMessage = true
+        });
+        System.Console.WriteLine($"New Commit with work {cleanCommit.Message}");
+        System.Console.WriteLine($"New Commit SHA-1 ID: {cleanCommit.Id.Sha}");
+        System.Console.WriteLine($"Committed by: {cleanCommit.Committer.Name} at {cleanCommit.Committer.When}");
     }
 
     private string AddReleaseTokenToMessage(TrackerReleaseType tokenType, string message)
