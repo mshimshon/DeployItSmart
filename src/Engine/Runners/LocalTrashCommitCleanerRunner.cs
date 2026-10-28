@@ -99,7 +99,11 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
 
         var nCommitMessage = string.Join("\n", nMessages);
         repo.Reset(ResetMode.Soft, commit);
-        repo.Commit(nCommitMessage, commit.Author, commit.Committer);
+        CommitOptions commitOptions = new CommitOptions
+        {
+            AmendPreviousCommit = true
+        };
+        repo.Commit(nCommitMessage, commit.Author, commit.Committer, commitOptions);
         System.Console.WriteLine($"New Commit with work {nCommitMessage}");
     }
 
