@@ -46,7 +46,11 @@ public class GenerateChangeLogRunner : BaseRunner
     {
         var repo = new Repository(Environment.CurrentDirectory);
         var remoteUrl = repo.Network.Remotes["origin"].Url;
-        var str = remoteUrl.Replace(".git", $"/commit/{data.CommitId}");
+        var str = remoteUrl.Replace(".git", string.Empty);
+        if (str.EndsWith("/"))
+            str += $"commit/{data.CommitId}";
+        else
+            str += $"/commit/{data.CommitId}";
         return str;
     }
 

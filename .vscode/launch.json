@@ -8,11 +8,12 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/bin/Debug/net10.0/DeployItSmart.dll",
             "args": [
-                "GetCurrentReleaseVersionRunner",
+                "GenerateChangeLogRunner",
                 "-output",
                 "C:\\Users\\Administrator\\source\\repos\\deploy_scripting\\output_test",
                 "-projects",
-                "src\\DeployItSmart.csproj"
+                "src\\DeployItSmart.csproj",
+                "-linkCommits"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

@@ -106,7 +106,7 @@ jobs:
           LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
           VERSION="${{ steps.get_version.outputs.version }}"
           OUTPUT="/tmp/artifacts/output"
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner -sinceTag "$LATEST_TAG" -output "$OUTPUT" -autoFailEmptyResult -linkCommits
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner -sinceTag "$LATEST_TAG" -output "$OUTPUT" -linkCommits
           EXIT_CODE=$?
           if [ $EXIT_CODE -ne 0 ]; then
             echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
