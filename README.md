@@ -1,6 +1,4 @@
 # Deploy scripting utilities
-
-[![Discord](https://img.shields.io/badge/Discord-Join-6A0DAD?logo=discord&logoColor=white)](https://discord.gg/DMegAnGyJv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mshimshon/deploy_scripting/blob/main/LICENSE)
 [![NuGet Version](https://img.shields.io/nuget/v/DeployItSmart)](https://www.nuget.org/packages/DeployItSmart)
 [![](https://img.shields.io/nuget/dt/DeployItSmart?label=Downloads)](https://www.nuget.org/packages/DeployItSmart)
