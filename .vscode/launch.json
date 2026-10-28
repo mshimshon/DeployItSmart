@@ -8,7 +8,7 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/bin/Debug/net10.0/DeployItSmart.dll",
             "args": [
-                "GenerateChangeLogRunner",
+                "LocalTrashCommitCleanerRunner",
                 "-output",
                 "C:\\Users\\Administrator\\source\\repos\\deploy_scripting\\output_test",
                 "-projects",

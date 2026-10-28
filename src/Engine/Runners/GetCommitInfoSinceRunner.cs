@@ -57,7 +57,7 @@ public class GetCommitInfoSinceRunner : BaseRunner
         FetchRemoteTags(repo);
         string targetSha = repo.Commits.QueryBy(gitCommitFilterOldestFirst).FirstOrDefault()?.Sha ?? throw new Exception("Cannot find first commit.");
         bool includeTarget = true;
-        if (!Configuration.SinceCreation)
+        if (sinceTag != default)
         {
             var tag = repo.Tags.FirstOrDefault(p => p.FriendlyName.Equals($"v{sinceTag}", StringComparison.OrdinalIgnoreCase));
             if (tag == default)

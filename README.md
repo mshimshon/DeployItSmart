@@ -70,17 +70,22 @@ The other default tokens include `note` for release annotations, `action!` as a 
 
 To use tokens safely, match the category to the actual impact, spell the token exactly as configured, and keep the commit message clear and focused. Avoid using the configured delimiter (`:` by default) unless it is separating a configured token from its description. Before publishing, review the generated version and changelog to verify that the commits were classified as intended.
 
-## Pre-push helper
+## Git Post-Commit
 
-`prePushUtility.ps1` checks and consolidates commit messages before they are pushed. It applies a `skipci` tag only when the latest commit contains the configured `trace!` no-trigger token at the time the helper runs; otherwise, it does not apply a tag. Configure the repository's CI/CD workflow to recognize the tag and skip the action; otherwise, the workflow may still run. Running the helper locally gives contributors an early opportunity to catch and fix issues, helping avoid unnecessary cleanup by GitHub Actions. This is a preventive check, not a replacement for the workflow: keep the action as a fallback and have it perform cleanup only when changes are merged.
+It's critical to actively clean up commits as development of a branch goes and the best way to do so is to setup a post commit routine clean up.
 
-Configure the repository's tracking branch, release tokens, and other supported settings in `config.sh` or `.github/config/deploy_utils.json`, and keep `prePushUtility.ps1` in the repository root. Run the helper manually from the root of the checkout with:
+You can install the tool using dotnet CLI:
 
-```powershell
-.\prePushUtility.ps1
+`dotnet tool install -g DeployItSmart`
+
+```bash
+    #!/bin/sh
+    dotnet tool install -g DeployItSmart
+    depitsmart LocalTrashCommitCleanerRunner
 ```
 
 To activate it automatically before pushes, create `.git/hooks/pre-push` in your local clone with this Git Bash hook:
+
 
 ```sh
 #!/bin/sh

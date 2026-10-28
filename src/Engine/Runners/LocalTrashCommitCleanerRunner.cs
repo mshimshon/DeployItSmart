@@ -38,13 +38,15 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
     public async Task CleanCommits()
     {
         var currentVersion = await CurrentReleaseVersion.GetCurrentTag();
-        string? sinceTag = currentVersion != default ? $"v{currentVersion.ToString(3)}" : null;
+        string? sinceTag = currentVersion != default ? currentVersion.ToString(3) : null;
         var history = await GetTrackCommitMessages.GetHistory(sinceTag);
         if (history.Count <= 1) return;
         var lastCommit = history.First();
         if (lastCommit.CountDirtyToken() > 0 && lastCommit.CountReleaseToken() <= 0)
+        {
+            System.Console.Error.WriteLine($"Last Commit is not Release Token");
             return;
-
+        }
         Dictionary<TrackerReleaseType, List<string>> tokenMessages = new()
         {
             [TrackerReleaseType.Breaking] = new List<string>(),
@@ -106,6 +108,10 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
         var nCommitMessage = string.Join("\n", nMessages);
         if (string.IsNullOrWhiteSpace(nCommitMessage))
             throw new Exception("Couldn't extract messages.");
+
+        bool skipci = false;
+        if (lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].Count > 0)
+            skipci = true;
         repo.Reset(ResetMode.Mixed, commit);
         Commands.Stage(repo, "*");
         var cleanCommit = repo.Commit(nCommitMessage, commit.Author, commit.Author, new()
@@ -113,6 +119,12 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
             AllowEmptyCommit = true,
             PrettifyMessage = true
         });
+
+        if (skipci)
+        {
+            System.Console.WriteLine("Trace No Trigger on Head, Skip CI");
+            repo.ApplyTag("skipci");
+        }
         System.Console.WriteLine($"New Commit with work {cleanCommit.Message}");
         System.Console.WriteLine($"New Commit SHA-1 ID: {cleanCommit.Id.Sha}");
         System.Console.WriteLine($"Committed by: {cleanCommit.Committer.Name} at {cleanCommit.Committer.When}");
