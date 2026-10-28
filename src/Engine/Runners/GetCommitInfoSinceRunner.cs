@@ -59,7 +59,7 @@ public class GetCommitInfoSinceRunner : BaseRunner
         bool includeTarget = true;
         if (!Configuration.SinceCreation)
         {
-            var tag = repo.Tags.FirstOrDefault(p => p.FriendlyName.Equals(sinceTag!, StringComparison.OrdinalIgnoreCase));
+            var tag = repo.Tags.FirstOrDefault(p => p.FriendlyName.Equals($"v{sinceTag}", StringComparison.OrdinalIgnoreCase));
             if (tag == default)
                 throw new Exception($"Tag: {sinceTag} Not Found Among Tags: {string.Join(',', repo.Tags.Select(p => p.FriendlyName))}");
             targetSha = tag.PeeledTarget.Sha;

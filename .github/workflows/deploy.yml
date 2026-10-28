@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
-      
+
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -39,31 +39,31 @@ jobs:
         run: |
           rm -rf /tmp/deploy_scripting
           git clone --branch main "https://github.com/mshimshon/deploy_scripting.git" "/tmp/deploy_scripting"
-          # Remove from YOUR pipeline, this is for local development.
-          # Force bash wildcards to include hidden files
-          shopt -s dotglob
-          # Copy and overwrite everything natively
           cp -Rf "$GITHUB_WORKSPACE"/* /tmp/deploy_scripting/
           chmod -R +x /tmp/deploy_scripting/
 
+      - name: Build Project
+        shell: bash
+        run: |
+          # Now --no-build works perfectly because Step 1 already created the files.
+          dotnet restore
+          dotnet build -c Release
+          dotnet build /tmp/deploy_scripting/src/DeployItSmart.csproj -c Release
 
       - name: Get Last Version Tag
         id: get_last_version
         shell: bash
         run: |
-          # 1. Run the script directly into a variable and capture the exit code
-          OUTPUT=$(/bin/bash "/tmp/deploy_scripting/utils/gitGetLatestRelease.sh")  || EXIT_CODE=$?
-          EXIT_CODE=$?
+          # 1. Run the command and capture the text output
+          OUTPUT=$(dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner) || EXIT_CODE=$?
 
-          # 2. Handle the explicit exit code requirements
-          if [ $EXIT_CODE -eq 2 ]; then
-            echo "Script returned exit code 2. Soft-handling: workflow will continue."
-          elif [ $EXIT_CODE -ne 0 ]; then
+          # 3. Fixed 'lif' typo to 'if' and added quotes for safety
+          if [ "$EXIT_CODE" -ne 0 ]; then
             echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit $EXIT_CODE
+            exit "$EXIT_CODE"
           fi
 
-          # 3. Clean the string directly from the variable and push it out to the runner environment
+          # 4. Parse out the tag
           LATEST_TAG=$(echo "$OUTPUT" | tr -d '\r' | tail -n 1 | xargs)
           echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
 
@@ -71,40 +71,32 @@ jobs:
         id: get_version
         shell: bash
         run: |
-          # 1. Retrieve the tag from the independent step output
-          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
-          echo "Log: Found latest tag string -> '$LATEST_TAG'"
-          
-          # 2. Run the script and read its output directly into the current shell process
-          if [ -n "$LATEST_TAG" ]; then
-            echo "Log: Running generateNewVersion.sh with tag option..."
-            VERSION_NUM=$(/bin/bash "/tmp/deploy_scripting/utils/generateNextVersion.sh" -since-tag "$LATEST_TAG" | tail -n 1)
-          else
-            echo "Log: No tag found. Running generateNewVersion.sh from scratch..."
-            VERSION_NUM=$(/bin/bash "/tmp/deploy_scripting/utils/generateNextVersion.sh" | tail -n 1)
-          fi
-          
-          # 3. Check if the script failed (exit code was not 0)
-          if [ ${PIPESTATUS} -ne 0 ]; then
-            echo "::error::Version generation script failed!"
-            exit 1
+          OUTPUT=$(dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner)
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
+            exit $EXIT_CODE
           fi
 
-          # 4. If it succeeded, log the output and save it
-          echo "Log: Successfully generated version number -> '$VERSION_NUM'"
-          echo "version=$VERSION_NUM" >> "$GITHUB_OUTPUT"
+          echo "Log: Successfully generated version number -> '$OUTPUT'"
+          echo "version=$OUTPUT" >> "$GITHUB_OUTPUT"
 
       - name: Publish Console
         shell: bash
         run: |
           VERSION="${{ steps.get_version.outputs.version }}"
-          WIN_OUT="/tmp/artifacts/output";
-          LINUX_OUT="/tmp/artifacts/output";
+          OUT="/tmp/artifacts/output";
+          WIN_OUT="/tmp/artifacts/publish/win";
+          LINUX_OUT="/tmp/artifacts/publish/linux";
+          mkdir -p "$OUT"
           mkdir -p "$WIN_OUT"
           mkdir -p "$LINUX_OUT"
-          dotnet publish "$GITHUB_WORKSPACE/commitCleaner.cs" --self-contained true -r win-x64 -c Release -o "$WIN_OUT" -p:AssemblyName=commit_cleaner_win_x64 -p:DebugSymbols=false -p:DebugType=none -p:PublishSingleFile=true -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
-          dotnet publish "$GITHUB_WORKSPACE/commitCleaner.cs" --self-contained true -r linux-x64 -c Release -o "$LINUX_OUT" -p:AssemblyName=commit_cleaner_linux_x64  -p:DebugSymbols=false -p:DebugType=none -p:PublishSingleFile=true -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
-      
+          dotnet publish "$GITHUB_WORKSPACE/src/DeployItSmart.csproj" --self-contained true -r win-x64 -c Release -o "$WIN_OUT" -p:DebugSymbols=false -p:DebugType=none -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
+          dotnet publish "$GITHUB_WORKSPACE/src/DeployItSmart.csproj" --self-contained true -r linux-x64 -c Release -o "$LINUX_OUT" -p:DebugSymbols=false -p:DebugType=none -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
+          dotnet pack "$GITHUB_WORKSPACE/src/DeployItSmart.csproj" -c Release -o "$OUT" -p:DebugSymbols=false -p:DebugType=none -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
+          tar -czvf "$OUT/deployitsmart_win_x64.tar.gz" -C "$WIN_OUT" .
+          tar -czvf "$OUT/deployitsmart_linux_x64.tar.gz" -C "$LINUX_OUT" .
+
       - name: Generate Release Notes
         id: generate_release_notes
         shell: bash
@@ -112,13 +104,15 @@ jobs:
           LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
           VERSION="${{ steps.get_version.outputs.version }}"
           OUTPUT="/tmp/artifacts/output"
-          if [ -n "$LATEST_TAG" ]; then
-            /bin/bash "/tmp/deploy_scripting/utils/generateChangelogs.sh" -linkCommits -output "$OUTPUT" -autoFailEmptyResult -autoSplitProject -linkCommits -since-tag "$LATEST_TAG" -version "$VERSION"
-          else
-            /bin/bash "/tmp/deploy_scripting/utils/generateChangelogs.sh" -linkCommits -output "$OUTPUT" -autoFailEmptyResult -autoSplitProject -linkCommits -version "$VERSION"
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner -sinceTag "$LATEST_TAG" -output "$OUTPUT" -autoFailEmptyResult -linkCommits
+          EXIT_CODE=$?
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
+            exit $EXIT_CODE
           fi
-          CHANGELOG_FILE="$OUTPUT/goodlife_changelog.md"
-          
+
+          CHANGELOG_FILE="$OUTPUT/_.md"
+
           if [ ! -f "$CHANGELOG_FILE" ]; then
             echo "::error::Required file goodlife_changelog.md was not found in $OUTPUT"
             exit 1
@@ -140,12 +134,13 @@ jobs:
           OUTPUT="/tmp/artifacts/output"
 
           echo "Checking directory: $OUTPUT"
-          
+
           # 1. Define array of allowed/expected filenames
           ALLOWED_FILES=(
-            "commit_cleaner_win_x64.exe"
-            "commit_cleaner_linux_x64"
-            "goodlife_changelog.md"
+            "deployitsmart_win_x64.tar.gz"
+            "deployitsmart_linux_x64.tar.gz"
+            "DeployItSmart.$VERSION.nupkg"
+            "_.md"
           )
 
           # Helper to verify if an item is inside our array
@@ -164,16 +159,7 @@ jobs:
               STATUS=1
             fi
           done
-
-          # 3. Check for unrecognized files (Found but not expected)
-          while IFS= read -r -d '' filepath; do
-            filename=$(basename "$filepath")
-            if ! contains_file "$filename"; then
-              echo "❌ Error: Unrecognized file found -> $filename"
-              STATUS=1
-            fi
-          done < <(find "$OUTPUT" -maxdepth 1 -type f -print0)
-
+          ls $OUTPUT
           # 4. Fail if any checks crashed
           if [ $STATUS -ne 0 ]; then
             echo "🚨 Validation failed!"
@@ -186,7 +172,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
-          body_path: "/tmp/artifacts/output/goodlife_changelog.md"
+          body_path: "/tmp/artifacts/output/_.md"
           files: |
-            /tmp/artifacts/output/*
-
+            /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
+            /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
+            /tmp/artifacts/output/DeployItSmart.${{ steps.get_version.outputs.version }}.nupkg
+            /tmp/artifacts/output/_.md

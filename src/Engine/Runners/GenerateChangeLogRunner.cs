@@ -72,7 +72,7 @@ public class GenerateChangeLogRunner : BaseRunner
             .Select(p =>
             {
                 if (Configuration.IncludeCommitLinks)
-                    return new MdListItem(new MdRawMarkdownSpan(p.CommitMessage), new MdLinkSpan(p.CommitId.Substring(0, 6), GetCommitLink(p)));
+                    return new MdListItem(new MdRawMarkdownSpan(p.CommitMessage), " ", new MdLinkSpan(p.CommitId.Substring(0, 6), GetCommitLink(p)));
                 else
                     return new MdListItem(new MdRawMarkdownSpan(p.CommitMessage));
             }).ToList();

@@ -5,18 +5,15 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+<IsPackable>true</IsPackable>
+    <!-- 🛠️ KEY TOOL & NUGET SETTINGS -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>depitsmart</ToolCommandName>
     <PackageId>DeployItSmart</PackageId>
-    <!-- Configure as a Single-File App -->
-    <PublishSingleFile>true</PublishSingleFile>
-
-    <!-- Configure as Self-Contained -->
-    <SelfContained>true</SelfContained>
-    <!-- License Configuration -->
+    <Version>0.0.1</Version>
+    <Authors>Maksim Shimshon</Authors>
+    <Description>A Simple tool to help github action auto version deployment and change log generator.</Description>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-
-    <!-- Readme Configuration -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
@@ -27,4 +24,13 @@
     <PackageReference Include="Grynwald.MarkdownGenerator" Version="3.0.106" />
     <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
   </ItemGroup>
+  <!-- Optimized target that works across CLI and Visual Studio -->
+  <Target Name="CopyNuPkg" AfterTargets="Pack" Condition="'$(Configuration)' == 'Release'">
+    <MakeDir Directories="..\..\..\nupkgs" />
+    <ItemGroup>
+      <!-- Automatically captures whatever nupkg was generated in the output path -->
+      <PackageFiles Include="$(PackageOutputPath)*.nupkg" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PackageFiles)" DestinationFolder="..\..\..\nupkgs" OverwriteReadOnlyFiles="true" SkipUnchangedFiles="false" />
+  </Target>
 </Project>

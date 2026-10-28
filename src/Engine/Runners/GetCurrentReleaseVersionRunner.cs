@@ -34,7 +34,7 @@ public class GetCurrentReleaseVersionRunner : BaseRunner
     public override async Task RunAsync()
     {
         var current = await GetCurrentTag();
-        Console.WriteLine(current?.ToString(3) ?? "Never Released");
+        Console.WriteLine(current?.ToString(3) ?? "");
     }
     private string _versionTagPattern = @"\b[V]\d+\.\d+\.\d+\b";
     public async Task<System.Version?> GetCurrentTag()
