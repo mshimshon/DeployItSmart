@@ -36,7 +36,6 @@ public class GetCurrentReleaseVersionRunner : BaseRunner
         var current = await GetCurrentTag();
         Console.WriteLine(current?.ToString(3) ?? "");
     }
-    private string _versionTagPattern = @"\b[V]\d+\.\d+\.\d+\b";
     public async Task<System.Version?> GetCurrentTag()
     {
         var tags = await GetCommitInfoSince.GetTagHistory();

@@ -162,18 +162,9 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
         string finalOut = string.Empty;
         string token = tokenKey;
 
-        finalOut += WrapToken(token) + $" {message}";
+        finalOut += $"{token}: {message}";
         return finalOut;
     }
 
-    private string WrapToken(string token)
-    {
-        string finalOut = string.Empty;
-        if (!string.IsNullOrWhiteSpace(MessageTool.ToolConfig.Configuration.ReleaseLeftSymbol))
-            finalOut += MessageTool.ToolConfig.Configuration.ReleaseLeftSymbol;
-        finalOut += token;
-        if (!string.IsNullOrWhiteSpace(MessageTool.ToolConfig.Configuration.ReleaseRightSymbol))
-            finalOut += MessageTool.ToolConfig.Configuration.ReleaseRightSymbol;
-        return finalOut;
-    }
+
 }

@@ -47,8 +47,5 @@ public record class ToolConfiguration
     // Change-log omission filters.
     public IReadOnlyList<string> ReleaseNoLogTokens { get; init; } = new[] { "trace" };
 
-    // Structural Commit Syntax Delimiters or Wrappers.
-    public string ReleaseLeftSymbol { get; init; } = "";
-    public string ReleaseRightSymbol { get; init; } = ":";
 
 }
