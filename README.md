@@ -1,9 +1,9 @@
 # Deploy scripting utilities
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mshimshon/deploy_scripting/blob/main/LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mshimshon/DeployItSmart/blob/main/LICENSE)
 [![NuGet Version](https://img.shields.io/nuget/v/DeployItSmart)](https://www.nuget.org/packages/DeployItSmart)
 [![](https://img.shields.io/nuget/dt/DeployItSmart?label=Downloads)](https://www.nuget.org/packages/DeployItSmart)
-[![Build](https://github.com/mshimshon/deploy_scripting/actions/workflows/build.yml/badge.svg)](https://github.com/mshimshon/deploy_scripting/actions/workflows/build.yml)
-[![Deploy](https://github.com/mshimshon/deploy_scripting/actions/workflows/deploy.yml/badge.svg)](https://github.com/mshimshon/deploy_scripting/actions/workflows/deploy.yml)
+[![Build](https://github.com/mshimshon/DeployItSmart/actions/workflows/build.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/build.yml)
+[![Deploy](https://github.com/mshimshon/DeployItSmart/actions/workflows/deploy.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/deploy.yml)
 
 
 # DeployItSmart
@@ -96,9 +96,7 @@ This tool is design to help maintain packages and projects that are simple and n
 | Token           | Version Change | Example          |
 | --------------- | -------------- | ---------------- |
 | `feat!:`        | MAJOR          | `1.0.0 -> 2.0.0` |
-| `feat!:`        | MINOR          | `1.0.0 -> 1.1.0` |
-| `feat!:`        | PATCH          | `1.0.0 -> 1.0.1` |
-| `feat!:`        | PATCH          | `1.0.0 -> 1.0.1` |
+| `feat:`         | MINOR          | `1.0.0 -> 1.1.0` |
 | `fix:`          | PATCH          | `1.0.0 -> 1.0.1` |
 | `note:`         | PATCH          | `1.0.0 -> 1.0.1` |
 | `sponsor:`      | PATCH          | `1.0.0 -> 1.0.1` |
@@ -175,6 +173,7 @@ In Git Bash, make the hook executable with `chmod +x .git/hooks/pre-push`. Git r
 
 
 ## Workflow Example
+
 ```yaml
 name: Build
 
@@ -262,5 +261,45 @@ jobs:
             echo "::error::The changelog file _.md exists but it is completely empty!"
             exit 1
           fi
+
+```
+
+
+## Useful
+You can put this in your github project readme to inform contributor of convention used by your project and whether or not you have all the proper implementation for supporting `trace!:`
+```markdown
+
+## Commit Convention
+To Keep branch history clean you must use [DeployItSmart](https://github.com/mshimshon/DeployItSmart) Standard Convention.
+
+| Token      | Description                                        | Version Change | Example          |
+| ---------- | -------------------------------------------------- | -------------- | ---------------- |
+| `feat!:`   | Breaking Change                                    | MAJOR          | `1.0.0 -> 2.0.0` |
+| `feat:`    | Non Breaking Feature                               | MINOR          | `1.0.0 -> 1.1.0` |
+| `fix:`     | Non Breaking Fix                                   | PATCH          | `1.0.0 -> 1.0.1` |
+| `note:`    | Release Note                                       | PATCH          | `1.0.0 -> 1.0.1` |
+| `sponsor:` | Release Sponsor `@username` to link username       | PATCH          | `1.0.0 -> 1.0.1` |
+| `thank:`   | Release Thank `@username` to link username         | PATCH          | `1.0.0 -> 1.0.1` |
+| `wip:`     | Dirty Work in progress, should not be pushed.      | PATCH          | `1.0.0 -> 1.0.1` |
+| `trace:`   | Quick Update Undocumented Change (Non Breaking)    | PATCH          | `1.0.0 -> 1.0.1` |
+| `trace!:`  | Push/Merge without triggering the release workflow | PATCH          | `1.0.0 -> 1.0.1` |
+
+HIGHLY RECOMMENDED: USE POST-COMMIT SCRIPT LOCALLY
+
+Create file `.git/hooks/post-commit`
+
+\```bash
+#!/bin/sh
+dotnet tool install -g DeployItSmart
+depitsmart LocalTrashCommitCleanerRunner
+\```
+
+Execute in shell to activate the git hook on that local project `git config core.hooksPath .git/hooks`.
+
+Note: this only activate locally each user on each repos must activate it this way unless you setup a global hook which in not recommended.
+
+Note 2: it is of your responsability to ensure clear branch history prior to merge whether or not you are using the post-commit.
+
+Check out [DeployItSmart](https://github.com/mshimshon/DeployItSmart) for more details.
 
 ```
