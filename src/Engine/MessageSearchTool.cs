@@ -8,132 +8,67 @@ namespace DeployItSmart.Engine;
 public class MessageSearchTool
 {
     public ToolConfigLoader ToolConfig { get; init; }
-    public List<string> BreakSearchPatterns { get; init; }
-    public List<string> FeatureSearchPatterns { get; init; }
-    public List<string> ThanksSearchPatterns { get; init; }
-    public List<string> SponsorSearchPatterns { get; init; }
-    public List<string> FixSearchPatterns { get; init; }
-    public List<string> NoteSearchPatterns { get; init; }
-    public List<string> WipSearchPatterns { get; init; }
-    public List<string> TraceSearchPatterns { get; init; }
-    public List<string> TraceNoTriggerSearchPatterns { get; init; }
-
+    private string _tokenMatchPattern = @"([^\s:]+)\s*:\s*([\s\S]*?)(?=\s+[^\s:]+\s*:|$)";
     public MessageSearchTool()
     {
         ToolConfig = new ToolConfigLoader();
-        BreakSearchPatterns = GenerateTokenMatchPatterns(TrackerReleaseType.Breaking);
-        FeatureSearchPatterns = GenerateTokenMatchPatterns(TrackerReleaseType.Feature);
-        FixSearchPatterns = GenerateTokenMatchPatterns(TrackerReleaseType.Fix);
-        ThanksSearchPatterns = GenerateTokenMatchPatterns(TrackerReleaseType.Thanks);
-        SponsorSearchPatterns = GenerateTokenMatchPatterns(TrackerReleaseType.Sponsor);
-        NoteSearchPatterns = GenerateTokenMatchPatterns(TrackerReleaseType.Note);
-        WipSearchPatterns = GenerateTokenMatchPatterns(TrackerDirtyType.WorkInProgress);
-        TraceSearchPatterns = GenerateTokenMatchPatterns(TrackerDirtyType.Trace);
-        TraceNoTriggerSearchPatterns = GenerateTokenMatchPatterns(TrackerDirtyType.TraceNoTrigger);
     }
 
-    private List<string> GenerateTokenMatchPatterns(TrackerReleaseType releaseType)
+    private string[] GetTokenMatchPatterns(TrackerReleaseType releaseType)
     {
         string[] tokens = [];
         switch (releaseType)
         {
             case TrackerReleaseType.Breaking:
-                if (BreakSearchPatterns != default) return BreakSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseBreakingTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseBreakingTokens.ToArray();
             case TrackerReleaseType.Feature:
-                if (FeatureSearchPatterns != default) return FeatureSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseFeatureTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseFeatureTokens.ToArray();
             case TrackerReleaseType.Fix:
-                if (FixSearchPatterns != default) return FixSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseFixTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseFixTokens.ToArray();
             case TrackerReleaseType.Sponsor:
-                if (SponsorSearchPatterns != default) return SponsorSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseSponsorTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseSponsorTokens.ToArray();
             case TrackerReleaseType.Thanks:
-                if (ThanksSearchPatterns != default) return ThanksSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseThanksTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseThanksTokens.ToArray();
             default:
-                if (NoteSearchPatterns != default) return NoteSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseNoteTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseNoteTokens.ToArray();
         }
-        List<string> tokenPatterns = new();
-        foreach (var item in tokens)
-            tokenPatterns.Add(GenerateTokenMatchPattern(item));
-        return tokenPatterns;
     }
 
-    private List<string> GenerateTokenMatchPatterns(TrackerDirtyType trackerDirty)
+    private string[] GetTokenMatchPatterns(TrackerDirtyType trackerDirty)
     {
         string[] tokens = [];
         switch (trackerDirty)
         {
             case TrackerDirtyType.Trace:
-                if (TraceSearchPatterns != default) return TraceSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseNoLogTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseNoLogTokens.ToArray();
             case TrackerDirtyType.TraceNoTrigger:
-                if (TraceNoTriggerSearchPatterns != default) return TraceNoTriggerSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseNoTriggerTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseNoTriggerTokens.ToArray();
             default:
-                if (WipSearchPatterns != default) return WipSearchPatterns;
-                tokens = ToolConfig.Configuration.ReleaseDirtyTokens.ToArray();
-                break;
+                return ToolConfig.Configuration.ReleaseDirtyTokens.ToArray();
         }
-        List<string> tokenPatterns = new();
-        foreach (var item in tokens)
-            tokenPatterns.Add(GenerateTokenMatchPattern(item));
-        return tokenPatterns;
-    }
-    private string GenerateTokenMatchPattern(string token)
-    {
-        string pattern = string.Empty;
-        bool rightOnly = ToolConfig.Configuration.ReleaseRightSymbol != string.Empty && ToolConfig.Configuration.ReleaseLeftSymbol == string.Empty;
-        bool leftOnly = ToolConfig.Configuration.ReleaseRightSymbol == string.Empty && ToolConfig.Configuration.ReleaseLeftSymbol != string.Empty;
-        bool wrapper = ToolConfig.Configuration.ReleaseRightSymbol != string.Empty && ToolConfig.Configuration.ReleaseLeftSymbol != string.Empty;
-        string right = Regex.Escape(ToolConfig.Configuration.ReleaseRightSymbol);
-        string left = Regex.Escape(ToolConfig.Configuration.ReleaseLeftSymbol);
-        token = Regex.Escape(token);
-        if (rightOnly)
-            pattern = @$"\b({token})\s*{right}\s*((?:[^\n]|(?!\b{token}\s*:))*)";
-        else if (leftOnly)
-            pattern = @$"{left}({token})\s+((?:(?!-{token}\s)[^\n])*)";
-        else if (wrapper)
-            pattern = @$"{right}({token}){left}\s*((?:(?!\[Trace\])[^\n])*)";
-        else
-            throw new Exception("Misconfigured ReleaseLeftSymbol or ReleaseRightSymbol.");
-        return pattern;
     }
 
-    private List<string> GetMatches(string pattern, string target)
+
+    private List<string> GetMatches(string key, string target)
     {
-        var matches = Regex.Matches(target, pattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+        var matches = Regex.Matches(target, _tokenMatchPattern, RegexOptions.IgnoreCase | RegexOptions.Multiline);
         if (matches.Count <= 0) return [];
-        return matches.Select(p => p.Groups[2].Value).ToList();
+        return matches.Where(p => key.Equals(p.Groups[1].Value, StringComparison.OrdinalIgnoreCase)).Select(p => p.Groups[2].Value).ToList();
     }
 
     private KeyValuePair<TrackerDirtyType, List<string>> ExtractDirtyTypeFor(TrackerDirtyType trackerType, string message)
     {
-        List<string> patterns = GenerateTokenMatchPatterns(trackerType);
         var result = new KeyValuePair<TrackerDirtyType, List<string>>(trackerType, new());
-        foreach (var pattern in patterns)
-            result.Value.AddRange(GetMatches(pattern, message));
-
+        foreach (var token in GetTokenMatchPatterns(trackerType))
+            result.Value.AddRange(GetMatches(token, message));
         return result;
     }
 
     private KeyValuePair<TrackerReleaseType, List<string>> ExtractReleaseTypeFor(TrackerReleaseType trackerType, string message)
     {
-        List<string> patterns = GenerateTokenMatchPatterns(trackerType);
         var result = new KeyValuePair<TrackerReleaseType, List<string>>(trackerType, new());
-        foreach (var pattern in patterns)
-            result.Value.AddRange(GetMatches(pattern, message));
+        foreach (var token in GetTokenMatchPatterns(trackerType))
+            result.Value.AddRange(GetMatches(token, message));
         return result;
     }
     public Dictionary<TrackerDirtyType, List<string>> FindDirtyTokens(string message)
