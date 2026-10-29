@@ -244,6 +244,7 @@ jobs:
         run: |
           LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
           VERSION="${{ steps.get_version.outputs.version }}"
+          mkdir -p "/tmp/artifacts/output"
           OUTPUT="/tmp/artifacts/output"
           depitsmart GenerateChangeLogRunner -output "$OUTPUT" -linkCommits
           EXIT_CODE=$?
