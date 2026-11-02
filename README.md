@@ -171,6 +171,23 @@ To activate it activate the scripts, create `.git/hooks/post-commit` you must ru
 In Git Bash, make the hook executable with `chmod +x .git/hooks/pre-push`. Git runs it before each push; a nonzero exit from the helper blocks the push, allowing you to address any issues first. Hooks are local to each clone and are not shared automatically, so each contributor must install the hook in their own checkout.
 
 
+## Visual Studio Code (Important)
+
+Make sure you disable the `Sync Changes` button on VS CODE otherwise it will pull/merge remote before pushing cause new commit merge which will require manual reset to clean the history.
+
+I will however try to make it auto cleaned if that occurs but for now make sure you dont pull dirty changes and force push clean up.
+
+`.vscode/settings.json`:
+
+```json
+    "git.showActionButton": {
+        "commit": true,
+        "publish": false,
+        "sync": false,
+    }
+
+```
+
 
 ## Workflow Example
 
