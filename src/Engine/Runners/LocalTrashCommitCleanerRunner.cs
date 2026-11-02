@@ -66,7 +66,7 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
 
         TrackedCommitMessageStructure? resetPoint = default;
         var commits = history.ToList();
-        foreach (var item in commits)
+        foreach (var item in commits) // ss
         {
             if (item != lastCommit)
                 if (item.CountReleaseToken() <= 0 || item.CountDirtyToken() > 0)
