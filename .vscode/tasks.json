@@ -37,7 +37,6 @@
                 "-g",
                 "DeployItSmart",
             ],
-            "continueOnError": true,
             "problemMatcher": "$msCompile"
         },
         {
