@@ -18,6 +18,18 @@
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
             "stopAtEntry": false
+        },
+        {
+            "name": "Install Local Test Version",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "dotnet",
+            "args": [
+                "tool",
+                "list",
+                "-g"
+            ], // Quickly displays help text and exits instantly
+            "preLaunchTask": "Install Local Tool Test" // 👈 Triggers your custom .NET tool pack/install task
         }
     ]
 }

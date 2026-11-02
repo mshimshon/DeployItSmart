@@ -194,14 +194,15 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: >-
-      !contains(github.event.head_commit.message, 'trace!') &&
-      !contains(github.event.workflow_run.head_commit.message, 'trace!')
+    # This ensures if head commit as trace! no workflow will be triggered for that push, note this is only really useful when pushing on main branch which should be unlikely
+    # but we are all rebels!
+    if: ${{ (!contains(github.event.head_commit.message, 'trace!') && !contains(github.event.workflow_run.head_commit.message, 'trace!')) }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # VERY IMPORTANT ON BOTH BUILD AND DEPLOY! THIS MAKES SURE GITHUB CHECKOUT WITH FULL REPO HISTORY, FORGETTING THIS WILL LIKELY RESULT TO FAILURES SUCH (Object Id Not found.)
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4

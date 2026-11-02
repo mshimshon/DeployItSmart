@@ -42,11 +42,11 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
         var history = await GetTrackCommitMessages.GetHistory(sinceTag);
         if (history.Count <= 1) return;
         var lastCommit = history.First();
-        if (lastCommit.CountDirtyToken() > 0 && lastCommit.CountReleaseToken() <= 0)
-        {
-            System.Console.Error.WriteLine($"Last Commit is not Release Token");
-            return;
-        }
+        // if (lastCommit.CountDirtyToken() > 0 && lastCommit.CountReleaseToken() <= 0)
+        // {
+        //     System.Console.Error.WriteLine($"Last Commit is not Release Token");
+        //     return;
+        // }
         Dictionary<TrackerReleaseType, List<string>> tokenMessages = new()
         {
             [TrackerReleaseType.Breaking] = new List<string>(),
@@ -72,11 +72,8 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
                 if (item.CountReleaseToken() <= 0 || item.CountDirtyToken() > 0)
                     resetPoint = item;
                 else
-                {
-                    // if (resetPoint != default)
-                    //     resetPoint = item;
                     break;
-                }
+
             foreach (var itemTokens in item.TokenMessages)
             {
                 var toAdd = itemTokens.Value.Where(p => !tokenMessages[itemTokens.Key].Contains(p, StringComparer.OrdinalIgnoreCase))

@@ -10,6 +10,78 @@
                 "${workspaceFolder}/src/DeployItSmart.csproj"
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Pack Local Test Tool",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "pack",
+                "${workspaceFolder}/src/DeployItSmart.csproj",
+                "-c",
+                "Debug",
+                "/p:DebugType=portable",
+                "/p:CopyOutputSymbolsToPublishDirectory=true",
+                "-o",
+                "${workspaceFolder}/.bin/pack"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Uninstall DeployItSmart",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "tool",
+                "uninstall",
+                "-g",
+                "DeployItSmart",
+            ],
+            "continueOnError": true,
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Clearing Tool Cache",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "nuget",
+                "locals",
+                "all",
+                "--clear",
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Install Tool from Local Pack",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "tool",
+                "install",
+                "-g",
+                "DeployItSmart",
+                "--add-source",
+                "${workspaceFolder}/.bin/pack",
+                "--version",
+                "0.0.1",
+                "--no-cache"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Install Local Tool Test",
+            "dependsOrder": "sequence", // Ensures child tasks run one after another
+            "dependsOn": [
+                "Pack Local Test Tool",
+                {
+                    "task": "Uninstall DeployItSmart",
+                    "continueOnError": true // 👈 This is the valid schema location
+                },
+                "Clearing Tool Cache",
+                "Install Tool from Local Pack",
+            ],
+            "problemMatcher": []
         }
     ]
 }
