@@ -5,6 +5,8 @@
 [![Build](https://github.com/mshimshon/DeployItSmart/actions/workflows/build.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/build.yml)
 [![Deploy](https://github.com/mshimshon/DeployItSmart/actions/workflows/deploy.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/deploy.yml)
 
+# NOT PRODUCTION READY!
+Version are all messed up unfortunately. do not use for production.
 
 # DeployItSmart
 
@@ -28,7 +30,7 @@
 ```bash
 depitsmart GetTrackCommitMessagesRunner # All since first commit (Dangerous if massive amount of commit in long lived projects.)
 depitsmart GetTrackCommitMessagesRunner -sinceTag "1.0.0" # All since the v1.0.0 tag.
-depitsmart GetTrackCommitMessagesRunner -keepDuplicate -sinceTag "1.0.0" # All since the v1.0.0 tag. remove all duplicate token:message from output.
+depitsmart GetTrackCommitMessagesRunner -keepDuplicate -sinceTag "1.0.0" # All since the v1.0.0 tag. will keep all duplicate token:message from output.
 ```
 
 - `GetCommitInfoSinceRunner` to print commit infomation in json array since the begining

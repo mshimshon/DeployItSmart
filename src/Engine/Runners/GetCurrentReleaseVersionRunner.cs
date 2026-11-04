@@ -37,15 +37,20 @@ public class GetCurrentReleaseVersionRunner : BaseRunner
         Console.WriteLine(current?.ToString(3) ?? "");
     }
     private readonly string _regexSemVer = @"^v\d+\.\d+\.\d+$";
-    public async Task<System.Version?> GetCurrentTag()
+    public async Task<List<System.Version>> GetVersions()
     {
         var tags = await GetCommitInfoSince.GetTagHistory();
-        var versions = tags.Where(p => Regex.IsMatch(p, _regexSemVer))
+        return tags.Where(p => Regex.IsMatch(p, _regexSemVer))
             .Select(p => new System.Version(p.Substring(1)))
             .OrderBy(v => v)
             .ToList();
-        var v = versions.LastOrDefault();
-        System.Console.Error.WriteLine(v == default ? "Current Version Tag Not Found" : v.ToString(3));
+    }
+    public async Task<System.Version?> GetCurrentTag()
+    {
+        var versions = await GetVersions();
+        System.Version? v = versions.LastOrDefault();
+
+
         return v;
     }
 }

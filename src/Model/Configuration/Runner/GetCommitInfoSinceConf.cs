@@ -5,9 +5,11 @@ namespace DeployItSmart.Model.Configuration.Runner;
 public sealed record class GetCommitInfoSinceConf
 {
     public string? SinceTag { get; init; }
+    public bool IsFirstRelease { get; init; }
     public GetCommitInfoSinceConf(SimpleArgumentParser simpleArgumentParser)
     {
         SinceTag = simpleArgumentParser.GetOptionalOption("-sinceTag");
+        IsFirstRelease = simpleArgumentParser.CheckOptionalFlag("-IsFirstRelease");
 
     }
 }

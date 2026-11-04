@@ -8,12 +8,14 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/bin/Debug/net10.0/DeployItSmart.dll",
             "args": [
-                "LocalTrashCommitCleanerRunner",
+                "GenerateChangeLogRunner",
                 "-output",
-                "C:\\Users\\Administrator\\source\\repos\\deploy_scripting\\src\\obj\\output_test",
+                "C:\\Users\\Administrator\\source\\repos\\DeployItSmart\\.bin",
                 "-projects",
                 "src\\DeployItSmart.csproj",
-                "-linkCommits"
+                "-linkCommits",
+                "-sinceTag",
+                "0.0.222"
             ],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

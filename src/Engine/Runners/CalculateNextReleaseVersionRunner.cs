@@ -37,8 +37,13 @@ public class CalculateNextReleaseVersionRunner : BaseRunner
     public async Task<System.Version> GetNextVersion()
     {
         var currentVersion = await CurrentReleaseVersion.GetCurrentTag();
+        var IsFirstRelease = GetTrackCommitMessages.GetCommitInfoSince.Configuration.IsFirstRelease;
+        if (currentVersion == default && !IsFirstRelease)
+            throw new Exception("-IsFirstRelease not active for protection we block continuing.");
         if (currentVersion == default)
             return new System.Version(MessageTool.ToolConfig.Configuration.InitialVersion);
+
+
 
         var nextVersion = currentVersion;
         var commits = await GetTrackCommitMessages.GetHistory(currentVersion.ToString(3));

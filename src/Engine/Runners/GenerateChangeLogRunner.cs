@@ -210,9 +210,23 @@ public class GenerateChangeLogRunner : BaseRunner
 
     public async Task GenerateChangelog()
     {
+
         var currentVersion = await CurrentReleaseVersion.GetCurrentTag();
         var nextVersion = await CalculateNextReleaseVersion.GetNextVersion();
-        var commits = await GetTrackCommitMessages.GetHistory(currentVersion?.ToString(3) ?? default);
+
+        var versions = await CurrentReleaseVersion.GetVersions();
+        var tagSince = GetTrackCommitMessages.GetCommitInfoSince.Configuration.SinceTag;
+        var IsFirstRelease = GetTrackCommitMessages.GetCommitInfoSince.Configuration.IsFirstRelease;
+        if (tagSince != default)
+            currentVersion = versions.FirstOrDefault(p => p.ToString(3) == tagSince);
+
+        if (currentVersion == default && tagSince != default)
+            throw new Exception($"cannot find specific tag since {tagSince}");
+        else if (currentVersion == default && !IsFirstRelease)
+            throw new Exception("-IsFirstRelease not active for protection we block continuing.");
+
+
+        var commits = await GetTrackCommitMessages.GetHistory(currentVersion!.ToString(3));
         // Get Structure commit and transform to reguler commit structure one message per commit per type then process
         Dictionary<TrackerReleaseType, List<CommitInfoStructure>> newCommits = new()
         {
