@@ -29,15 +29,17 @@
         },
         {
             "label": "Uninstall DeployItSmart",
+            "type": "shell",
             "command": "dotnet",
-            "type": "process",
             "args": [
                 "tool",
                 "uninstall",
                 "-g",
                 "DeployItSmart",
+                "||",
+                "true"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
         },
         {
             "label": "Clearing Tool Cache",
@@ -73,10 +75,7 @@
             "dependsOrder": "sequence", // Ensures child tasks run one after another
             "dependsOn": [
                 "Pack Local Test Tool",
-                {
-                    "task": "Uninstall DeployItSmart",
-                    "continueOnError": true // 👈 This is the valid schema location
-                },
+                "Uninstall DeployItSmart",
                 "Clearing Tool Cache",
                 "Install Tool from Local Pack",
             ],
