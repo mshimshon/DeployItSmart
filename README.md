@@ -8,6 +8,11 @@
 # NOT PRODUCTION READY!
 Version are all messed up unfortunately. do not use for production.
 
+DISCLAIMER OF HERATIC AND IDIOTIC BEHAVIOR
+> Because im a rebel testing on live repos i'll let you know when its good to go what ever version it will be xD
+
+*Do not try, at home! try at work instead :O, nooo he didn't!*
+
 # DeployItSmart
 
 **DeployItSmart** is a lightweight, convention-driven .NET global tool designed to automate versioning, changelog generation, and Git history cleanup for simple single- or multi-project repositories. By parsing standardized commit message tokens (such as `feat:`, `fix:`, or `wip:`), it dynamically calculates the next release version and builds targeted changelogs while keeping deployment workflows fast and uncomplicated.
