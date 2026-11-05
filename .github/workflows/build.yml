@@ -52,17 +52,16 @@ jobs:
         id: get_last_version
         shell: bash
         run: |
-          # 1. Run the command and capture the text output
           OUTPUT=$(dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner) || EXIT_CODE=$?
-
-          # 3. Fixed 'lif' typo to 'if' and added quotes for safety
           if [ "$EXIT_CODE" -ne 0 ]; then
             echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit "$EXIT_CODE"
+            exit 1
           fi
-
-          # 4. Parse out the tag
           LATEST_TAG=$(echo "$OUTPUT" | tr -d '\r' | tail -n 1 | xargs)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "::error::Failed to resolve latest tag. Output was empty or invalid."
+            exit 1
+          fi
           echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
 
       - name: Calculate Version

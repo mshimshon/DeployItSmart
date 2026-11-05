@@ -28,9 +28,7 @@
   "ThanksImportantHeader": "Super Special Thanks \uD83D\uDC96",
   "ProjectsComment": "Relative path to a file any file which will be known as project and its friendly name for changelog printing. (_ = root master log/project, do not remove)",
   "Projects": {
-    "_": "Deploy It Smart",
-    "src\\Runners\\LocalTrashCommitCleanerRunner.cs": "Runners",
-    "src\\Model\\Configuration\\ChangeLogParameters.cs": "Configuration Parameters"
+    "_": "Deploy It Smart"
   },
   "TagMarkdownComment": "Those are the post processing filtering, using regex to group and map to Markdown with ability to extract groups like so \u0027XXXXX\u0027 -\u003E \u0027[Visit {gp:1} At MyProfile](https://myprofile.com/{gp:0})\u0027",
   "TagMarkdown": {
