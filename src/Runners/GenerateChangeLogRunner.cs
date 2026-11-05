@@ -25,11 +25,13 @@ public class GenerateChangeLogRunner : IRunner
     private readonly CalculateNextReleaseVersionRunner _calculateNextReleaseVersion;
     private readonly GetTrackCommitMessagesRunner _getTrackCommitMessages;
     private readonly GetCurrentReleaseVersionRunner _currentReleaseVersion;
+    private readonly GetCurrentPreReleaseVersionRunner _currentPreReleaseVersion;
     private readonly MessageSearchTool _messageTool;
     Dictionary<string, string> _replacePattern = new();
     public GenerateChangeLogRunner()
     {
         _calculateNextReleaseVersion = new CalculateNextReleaseVersionRunner();
+        _currentPreReleaseVersion = new GetCurrentPreReleaseVersionRunner();
         _getTrackCommitMessages = new GetTrackCommitMessagesRunner();
         _messageTool = new MessageSearchTool();
         _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
@@ -95,9 +97,10 @@ public class GenerateChangeLogRunner : IRunner
         {
             try
             {
-                if (Regex.IsMatch(unclean, pattern.Key))
+                System.Console.Error.WriteLine($"Testing Pattern: {pattern.Key} -> {pattern.Value} | {data}");
+                if (!Regex.IsMatch(unclean, pattern.Key))
                     continue;
-                string result = Regex.Replace(unclean, pattern.Key, match =>
+                unclean = Regex.Replace(unclean, pattern.Key, match =>
                     {
                         var replaceWith = pattern.Value;
                         for (int i = 1; i < match.Groups.Count; i++)
@@ -105,8 +108,8 @@ public class GenerateChangeLogRunner : IRunner
                             var value = match.Groups[i].Value;
                             replaceWith = replaceWith.Replace($"{{gp:{i}}}", value);
                         }
+                        System.Console.Error.WriteLine($"Cleaning Metadata: {pattern.Key} -> {pattern.Value} | {replaceWith}");
 
-                        // Return the specific replacement string for this exact match
                         return replaceWith;
                     });
             }
@@ -318,21 +321,25 @@ public class GenerateChangeLogRunner : IRunner
     {
 
         var currentVersion = await _currentReleaseVersion.GetCurrentTag();
+        var currentPrerelease = await _currentPreReleaseVersion.GetCurrentPreviewTag();
         var nextVersion = await _calculateNextReleaseVersion.GetNextVersion();
 
         var versions = await _currentReleaseVersion.GetVersions();
         var tagSince = CommitSearchConfig.SinceTag;
         var IsFirstRelease = CommitSearchConfig.IsFirstRelease;
         if (tagSince != default)
-            currentVersion = versions.FirstOrDefault(p => p.ToString(3) == tagSince);
+            currentVersion = versions.FirstOrDefault(p => p.ToString() == tagSince);
+
 
         if (currentVersion == default && tagSince != default)
             throw new Exception($"cannot find specific tag since {tagSince}");
         else if (currentVersion == default && !IsFirstRelease)
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
+        else if (currentVersion != default)
+            if (ChangeLogConfig.IsPreviewMode && currentPrerelease != default && currentPrerelease > currentVersion)
+                currentVersion = currentPrerelease;
 
-
-        var commits = await _getTrackCommitMessages.GetHistory(currentVersion!.ToString(3));
+        var commits = await _getTrackCommitMessages.GetHistory(currentVersion!.ToString());
         // Get Structure commit and transform to reguler commit structure one message per commit per type then process
         Dictionary<TrackerReleaseType, List<CommitInfoStructure>> newCommits = new()
         {

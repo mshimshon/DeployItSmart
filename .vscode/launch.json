@@ -15,9 +15,10 @@
                 "src\\DeployItSmart.csproj",
                 "--linkCommits",
                 "--nonLinearMasterFix",
-                "--allowUnsafeVersionFromSinceTag",
-                "--sinceTag",
-                "0.0.1"
+                "--previewMode",
+                // "--allowUnsafeVersionFromSinceTag",
+                // "--sinceTag",
+                // "0.0.1"
             ],
             "cwd": "${input:targetRepository}",
             "console": "internalConsole",
@@ -42,13 +43,14 @@
             "type": "pickString",
             "description": "Select the command to test",
             "options": [
-                "CalculateNextReleaseVersionRunner",
                 "GenerateChangeLogRunner",
-                "GetCurrentReleaseVersionRunner",
                 "GetCommitInfoSinceRunner",
                 "GenerateCustomConfigRunner",
                 "GetTrackCommitMessagesRunner",
-                "LocalTrashCommitCleanerRunner"
+                "LocalTrashCommitCleanerRunner",
+                "GetCurrentReleaseVersionRunner",
+                "GetCurrentPreReleaseVersionRunner",
+                "CalculateNextReleaseVersionRunner",
             ],
             "default": "CalculateNextReleaseVersionRunner"
         },

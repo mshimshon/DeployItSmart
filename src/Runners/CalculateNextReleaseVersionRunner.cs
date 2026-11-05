@@ -5,6 +5,7 @@ using DeployItSmart.Model.Configuration;
 using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 using DeployItSmart.Model.DataStructure;
 using DeployItSmart.Model.DataStructure.Enums;
+using NuGet.Versioning;
 
 namespace DeployItSmart.Runners;
 
@@ -14,10 +15,12 @@ public class CalculateNextReleaseVersionRunner : IRunner
     private CommitSearchParameters CommitSearchConfig => GetConfigurationFor<CommitSearchParameters>();
 
     private readonly GetCurrentReleaseVersionRunner _currentReleaseVersion;
+    private readonly GetCurrentPreReleaseVersionRunner _getCurrentPreReleaseVersion;
     private readonly GetTrackCommitMessagesRunner _getTrackCommitMessages;
     private readonly MessageSearchTool _messageTool;
     public CalculateNextReleaseVersionRunner()
     {
+        _getCurrentPreReleaseVersion = new GetCurrentPreReleaseVersionRunner();
         _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
         _getTrackCommitMessages = new GetTrackCommitMessagesRunner();
         _messageTool = new MessageSearchTool();
@@ -29,24 +32,21 @@ public class CalculateNextReleaseVersionRunner : IRunner
         Console.WriteLine(version);
     }
 
-    public async Task<System.Version> GetNextVersion()
+    public async Task<NuGetVersion> GetNextVersion()
     {
-        var currentVersion = await _currentReleaseVersion.GetCurrentTag();
+        var latestStable = await _currentReleaseVersion.GetCurrentTag();
+        var latestPreview = await _getCurrentPreReleaseVersion.GetCurrentPreviewTag();
         var IsFirstRelease = CommitSearchConfig.IsFirstRelease;
         var IsAllowingUnsafe = CommitSearchConfig.AllowUnsafeVersionCalculation;
         var tagSince = CommitSearchConfig.SinceTag;
         if (tagSince != default && IsAllowingUnsafe)
-            currentVersion = new Version(tagSince);
+            latestStable = NuGetVersion.Parse(tagSince);
 
-        if (currentVersion == default && !IsFirstRelease)
+        if (latestStable == default && !IsFirstRelease)
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
-        if (currentVersion == default)
-            return new System.Version(ToolConfig.InitialVersion);
-
-
-
-        var nextVersion = currentVersion;
-        var commits = await _getTrackCommitMessages.GetHistory(currentVersion.ToString(3));
+        if (latestStable == default)
+            return NuGetVersion.Parse(ToolConfig.InitialVersion);
+        var commits = await _getTrackCommitMessages.GetHistory(latestStable.ToString());
         int major = 0, minor = 0;
         if (HasAnyBreakingChanges(commits)) major = 1;
         else
@@ -59,12 +59,33 @@ public class CalculateNextReleaseVersionRunner : IRunner
             minor = combinedMinors - (earnedMajors * ToolConfig.MinorRolloverMajor);
             major = major + earnedMajors;
         }
+
+
+
+        NuGetVersion? nextVersion;
         if (major > 0)
-            nextVersion = new(currentVersion.Major + 1, 0, 0);
+            nextVersion = new(latestStable.Major + 1, 0, 0);
         else if (minor > 0)
-            nextVersion = new(currentVersion.Major, currentVersion.Minor + 1, 0);
+            nextVersion = new(latestStable.Major, latestStable.Minor + 1, 0);
         else
-            nextVersion = new(currentVersion.Major, currentVersion.Minor, currentVersion.Build + 1);
+            nextVersion = new(latestStable.Major, latestStable.Minor, latestStable.Patch + 1);
+
+        /*
+            If this hit it mean someone change the git history on the main tracking branch effectively destroyed the version calculation
+        */
+        if (latestPreview != default && latestPreview > nextVersion)
+            throw new Exception($"Last Preview is greater than next logical release this should be impossible unless the git tag history got changed manually cannot proceed next stable = {nextVersion} vs current preview = {latestPreview}");
+        if (CommitSearchConfig.IsPreviewMode && (latestPreview == default || latestPreview < latestStable))
+        {
+            var releaseLabels = new[] { CommitSearchConfig.PreviewMark, "1" };
+            nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, releaseLabels!, null);
+
+        }
+        else if (CommitSearchConfig.IsPreviewMode && latestPreview != default && latestPreview >= latestStable)
+        {
+            nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, latestPreview.ReleaseLabels, null);
+            nextVersion = nextVersion.IncrementPrelease();
+        }
 
         return nextVersion;
     }

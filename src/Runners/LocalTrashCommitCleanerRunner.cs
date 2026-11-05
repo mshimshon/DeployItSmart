@@ -35,7 +35,7 @@ public class LocalTrashCommitCleanerRunner : IRunner
     public async Task CleanCommits()
     {
         var currentVersion = await _currentReleaseVersion.GetCurrentTag();
-        string? sinceTag = currentVersion != default ? currentVersion.ToString(3) : null;
+        string? sinceTag = currentVersion != default ? currentVersion.ToString() : null;
         var history = await _getTrackCommitMessages.GetHistory(sinceTag);
         if (history.Count <= 1) return;
         var lastCommit = history.First();

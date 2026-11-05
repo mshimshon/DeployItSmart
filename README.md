@@ -41,42 +41,49 @@ dotnet tool install -g DeployItSmart
 - `GetTrackCommitMessagesRunner` to print the commit tracked messages json object array
 ```bash
 depitsmart GetTrackCommitMessagesRunner # All since first commit (Dangerous if massive amount of commit in long lived projects.)
-depitsmart GetTrackCommitMessagesRunner -sinceTag "1.0.0" # All since the v1.0.0 tag.
-depitsmart GetTrackCommitMessagesRunner -keepDuplicate -sinceTag "1.0.0" # All since the v1.0.0 tag. will keep all duplicate token:message from output.
+depitsmart GetTrackCommitMessagesRunner --sinceTag "1.0.0" # All since the v1.0.0 tag.
+depitsmart GetTrackCommitMessagesRunner --keepDuplicate --sinceTag "1.0.0" # All since the v1.0.0 tag. will keep all duplicate token:message from output.
 ```
 
 - `GetCommitInfoSinceRunner` to print commit infomation in json array since the begining
 ```bash
 depitsmart GetCommitInfoSinceRunner # All since first commit (Dangerous if massive amount of commit in long lived projects.)
-depitsmart GetCommitInfoSinceRunner -sinceTag "1.0.0" # All since the v1.0.0 tag.
-depitsmart GetCommitInfoSinceRunner -sinceTag "1.0.0" # All since the v1.0.0 tag. remove all duplicate token:message from output.
+depitsmart GetCommitInfoSinceRunner --sinceTag "1.0.0" # All since the v1.0.0 tag.
+depitsmart GetCommitInfoSinceRunner --sinceTag "1.0.0" # All since the v1.0.0 tag. remove all duplicate token:message from output.
 ```
 
 - `GenerateChangeLogRunner` generate changelogs based on commit from the last v
 ```bash
-depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" # Generate log output _.x.x.x.md since the last v tag
-depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" -sinceTag "1.0.0" # Generate log output _.x.x.x.md since the version will still generate for the next version but will include the changes since
-depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" -sinceTag "1.0.0" --allowUnsafeVersionFromSinceTag # same as before but will generate file version from 'sinceTag' rather than current it is dangerously unsafe.
-depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" -autoFailEmptyResult # Exit 1 if the changelog is empty otherwise it generates empty changelog with message.
-depitsmart GenerateChangeLogRunner -output "/tmp/changelogs" -linkCommits # add link on each changes in log to its commit.
+depitsmart GenerateChangeLogRunner --output "/tmp/changelogs" # Generate log output _.x.x.x.md since the last v tag
+depitsmart GenerateChangeLogRunner --output "/tmp/changelogs" --sinceTag "1.0.0" # Generate log output _.x.x.x.md since the version will still generate for the next version but will include the changes since
+depitsmart GenerateChangeLogRunner --output "/tmp/changelogs" --sinceTag "1.0.0" --allowUnsafeVersionFromSinceTag # same as before but will generate file version from 'sinceTag' rather than current it is dangerously unsafe.
+depitsmart GenerateChangeLogRunner --output "/tmp/changelogs" --autoFailEmptyResult # Exit 1 if the changelog is empty otherwise it generates empty changelog with message.
+depitsmart GenerateChangeLogRunner --output "/tmp/changelogs" --linkCommits # add link on each changes in log to its commit.
+depitsmart GenerateChangeLogRunner --output "/tmp/changelogs"  --previewMode # Same be will generate
 ```
 
-- `CalculateNextReleaseVersionRunner` print the next version based on commit changes fsince last v tag fails if no changes.
-```bash
-depitsmart CalculateNextReleaseVersionRunner # calculate next natural version since last v tag
-depitsmart CalculateNextReleaseVersionRunner  -sinceTag "1.0.0" --allowUnsafeVersionFromSinceTag # Will calculate the version since the specified tag dangerous should not be use on production.
-```
+
 
 - `GenerateCustomConfigRunner` creates the user configuration file `.github/config/deploy_it_smart.json` with default parameters.
 ```bash
-depitsmart GenerateCustomConfigRunner # can be safely ran if you have config already it will update any missing property with default but will not override your changes.
+depitsmart GenerateCustomConfigRunner # can be safely ran if you have config already it will update any missing aaaaaproperty with default but will not override your changes.
+```
+
+- `GetCurrentPreReleaseVersionRunner` return the current latest v1.0.0-preview.x tag
+```bash
+depitsmart GetCurrentPreReleaseVersionRunner
 ```
 
 - `GetCurrentReleaseVersionRunner` return the current latest v tag version.
 ```bash
 depitsmart GetCurrentReleaseVersionRunner
 ```
-
+- `CalculateNextReleaseVersionRunner` print the next version based on commit changes fsince last v tag fails if no changes.
+```bash
+depitsmart CalculateNextReleaseVersionRunner # calculate next natural version since last v tag
+depitsmart CalculateNextReleaseVersionRunner  --sinceTag "1.0.0" --allowUnsafeVersionFromSinceTag # Will calculate the version since the specified tag dangerous should not be use on production.
+depitsmart CalculateNextReleaseVersionRunner  --previewMode # will calculate the upcoming expected release as preview.X + N
+```
 - `LocalTrashCommitCleanerRunner` Clean current commit history from dirty token squashing everything this command is used in our post-commit clean up script.
 ```bash
 # WARNING any working branch pushing dirty commit wip will requires a force push because we rewrite history and that history was pushed before clean token appeared

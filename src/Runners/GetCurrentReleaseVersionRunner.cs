@@ -8,6 +8,8 @@ using DeployItSmart.Engine.Utils;
 using DeployItSmart.Engine.Runner;
 using LibGit2Sharp;
 using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
+using NuGet.Versioning;
+using DeployItSmart.Model.Configuration;
 
 namespace DeployItSmart.Runners;
 
@@ -21,7 +23,7 @@ public class GetCurrentReleaseVersionRunner : IRunner
 
     };
     private ToolConf ToolConfig => GetToolConfiguration();
-
+    private ChangeLogParameters ChangeLogConfig => GetConfigurationFor<ChangeLogParameters>();
     private GetCommitInfoSinceRunner _getCommitInfoSince;
     private readonly MessageSearchTool _messageTool;
     private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
@@ -40,23 +42,21 @@ public class GetCurrentReleaseVersionRunner : IRunner
     public async Task RunAsync()
     {
         var current = await GetCurrentTag();
-        Console.WriteLine(current?.ToString(3) ?? "");
+        Console.WriteLine(current?.ToString() ?? "");
     }
     private readonly string _regexSemVer = @"^v\d+\.\d+\.\d+$";
-    public async Task<List<System.Version>> GetVersions()
+    public async Task<List<NuGetVersion>> GetVersions()
     {
         var tags = await _getCommitInfoSince.GetTagHistory();
         return tags.Where(p => Regex.IsMatch(p, _regexSemVer))
-            .Select(p => new System.Version(p.Substring(1)))
+            .Select(p => NuGetVersion.Parse(p.Substring(1)))
             .OrderBy(v => v)
             .ToList();
     }
-    public async Task<System.Version?> GetCurrentTag()
+    public async Task<NuGetVersion?> GetCurrentTag()
     {
         var versions = await GetVersions();
-        System.Version? v = versions.LastOrDefault();
-
-
+        NuGetVersion? v = versions.LastOrDefault(p => !p.IsPrerelease);
         return v;
     }
 }

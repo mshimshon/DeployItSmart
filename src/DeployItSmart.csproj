@@ -24,6 +24,7 @@
     <PackageReference Include="Grynwald.MarkdownGenerator" Version="3.0.106" />
     <PackageReference Include="LibGit2Sharp" Version="0.32.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageReference Include="NuGet.Versioning" Version="7.9.0" />
   </ItemGroup>
   <!-- Optimized target that works across CLI and Visual Studio -->
   <Target Name="CopyNuPkg" AfterTargets="Pack" Condition="'$(Configuration)' == 'Release'">
