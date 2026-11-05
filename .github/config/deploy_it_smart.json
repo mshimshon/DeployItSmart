@@ -34,7 +34,7 @@
   },
   "TagMarkdownComment": "Those are the post processing filtering, using regex to group and map to Markdown with ability to extract groups like so \u0027XXXXX\u0027 -\u003E \u0027[Visit {gp:1} At MyProfile](https://myprofile.com/{gp:0})\u0027",
   "TagMarkdown": {
-    "@": "[{this}](https://github.com/{this})"
+    "\\{gh;([^;]+);([^}]+)\\}": "[{gp:1}](https://github.com/{gp:0})"
   },
   "TokensComment": "You can add or remove tokens for each sections for you aren\u0027t using standard... each token will be used as such in commit \u0027token:\u0027, \u0027token!:\u0027 or \u0027token~:\u0027 you do not need to include \u0027!\u0027 nor \u0027~\u0027 ",
   "TokensComment2": "\u0027!\u0027, \u0027~\u0027 are included as code standard of this tool ! = Breaking Change Bump Major, ~ = Important Change but not breaking code bump normally and no symbol = regular change no special attention. ",
@@ -63,7 +63,7 @@
   ],
   "ReleaseNoTriggerTokensComment": "Another special token is the skipci~: which if configured correctly makes the action skip, this is design for early stage or lax rules direct main push.",
   "ReleaseNoTriggerTokens": [
-    "trace!"
+    "skipci"
   ],
   "PatchRolloverMinorComment": "Design to define how many patches is allowed until the patch count is so high that is just count towards minor bump (Max 10000)",
   "PatchRolloverMinor": 10000,

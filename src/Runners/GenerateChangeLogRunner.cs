@@ -33,9 +33,7 @@ public class GenerateChangeLogRunner : IRunner
         _getTrackCommitMessages = new GetTrackCommitMessagesRunner();
         _messageTool = new MessageSearchTool();
         _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
-
-        //TODO: REDO
-        _replacePattern = ToolConfig.TagMarkdown.ToDictionary(p => $@"(?<=\s|^)({Regex.Escape(p.Key)})(\w+)", p => p.Value);
+        _replacePattern = ToolConfig.TagMarkdown.ToDictionary(p => p.Key, p => p.Value);
     }
     public static IRunner Create() => new GenerateChangeLogRunner();
     public static string GetCommandName() => nameof(GenerateChangeLogRunner);
@@ -95,14 +93,28 @@ public class GenerateChangeLogRunner : IRunner
         string unclean = data;
         foreach (var pattern in _replacePattern)
         {
-            var matches = Regex.Matches(unclean, pattern.Key);
-            if (matches.Count <= 0) continue;
-            foreach (Match match in matches)
+            try
             {
-                var value = match.Groups[2].Value;
-                var replaceWith = pattern.Value.Replace("{this}", value);
-                unclean = unclean.Replace(match.Groups[0].Value, replaceWith);
+                if (Regex.IsMatch(unclean, pattern.Key))
+                    continue;
+                string result = Regex.Replace(unclean, pattern.Key, match =>
+                    {
+                        var replaceWith = pattern.Value;
+                        for (int i = 1; i < match.Groups.Count; i++)
+                        {
+                            var value = match.Groups[i].Value;
+                            replaceWith = replaceWith.Replace($"{{gp:{i}}}", value);
+                        }
+
+                        // Return the specific replacement string for this exact match
+                        return replaceWith;
+                    });
             }
+            catch (System.Exception ex)
+            {
+                System.Console.WriteLine($"Error Complex Parsing {ex.Message}");
+            }
+
         }
         return unclean;
     }

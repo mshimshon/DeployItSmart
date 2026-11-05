@@ -113,7 +113,7 @@ jobs:
             exit $EXIT_CODE
           fi
 
-          CHANGELOG_FILE="$OUTPUT/_.md"
+          CHANGELOG_FILE="$OUTPUT/_.$VERSION.md"
 
           if [ ! -f "$CHANGELOG_FILE" ]; then
             echo "::error::Required file goodlife_changelog.md was not found in $OUTPUT"

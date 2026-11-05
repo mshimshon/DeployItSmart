@@ -20,8 +20,8 @@ jobs:
       id-token: write
       contents: read
     if: >-
-      !contains(github.event.head_commit.message, 'trace!') &&
-      !contains(github.event.workflow_run.head_commit.message, 'trace!')
+      !contains(github.event.head_commit.message, 'skipci~') &&
+      !contains(github.event.workflow_run.head_commit.message, 'skipci~')
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -109,7 +109,7 @@ jobs:
             exit $EXIT_CODE
           fi
 
-          CHANGELOG_FILE="$OUTPUT/_.md"
+          CHANGELOG_FILE="$OUTPUT/_.$VERSION.md"
 
           if [ ! -f "$CHANGELOG_FILE" ]; then
             echo "::error::Required file goodlife_changelog.md was not found in $OUTPUT"

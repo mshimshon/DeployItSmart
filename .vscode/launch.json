@@ -15,9 +15,9 @@
                 "src\\DeployItSmart.csproj",
                 "--linkCommits",
                 "--nonLinearMasterFix",
-                // "--allowUnsafeVersionFromSinceTag",
-                // "--sinceTag",
-                // "0.0.1"
+                "--allowUnsafeVersionFromSinceTag",
+                "--sinceTag",
+                "0.0.1"
             ],
             "cwd": "${input:targetRepository}",
             "console": "internalConsole",
