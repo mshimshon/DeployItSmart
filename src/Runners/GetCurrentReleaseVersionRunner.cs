@@ -3,35 +3,41 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using DeployItSmart.Engine.ArgumentParser;
+using DeployItSmart.Engine.Configuration;
+using DeployItSmart.Engine.Utils;
 using DeployItSmart.Engine.Runner;
 using LibGit2Sharp;
+using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 
-namespace DeployItSmart.Engine.Runners;
+namespace DeployItSmart.Runners;
 
-public class GetCurrentReleaseVersionRunner : BaseRunner
+public class GetCurrentReleaseVersionRunner : IRunner
 {
-    private JsonSerializerOptions jsonSerializerOption = new JsonSerializerOptions()
+    private readonly JsonSerializerOptions _jsonSerializerOption = new JsonSerializerOptions()
     {
         PropertyNameCaseInsensitive = true,
         WriteIndented = true,
         ReferenceHandler = ReferenceHandler.IgnoreCycles
 
     };
-    public GetCommitInfoSinceRunner GetCommitInfoSince { get; init; }
-    public MessageSearchTool MessageTool { get; init; }
-    private CommitFilter gitCommitFilterOldestFirst = new CommitFilter()
+    private ToolConf ToolConfig => GetToolConfiguration();
+
+    private GetCommitInfoSinceRunner _getCommitInfoSince;
+    private readonly MessageSearchTool _messageTool;
+    private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
     {
         SortBy = CommitSortStrategies.Reverse
     };
 
-
-    public GetCurrentReleaseVersionRunner(SimpleArgumentParser simpleArgument)
+    public static IRunner Create() => new GetCurrentReleaseVersionRunner();
+    public static string GetCommandName() => nameof(GetCurrentReleaseVersionRunner);
+    public GetCurrentReleaseVersionRunner()
     {
-        GetCommitInfoSince = new GetCommitInfoSinceRunner(simpleArgument);
-        MessageTool = new MessageSearchTool();
+        _getCommitInfoSince = new GetCommitInfoSinceRunner();
+        _messageTool = new MessageSearchTool();
     }
 
-    public override async Task RunAsync()
+    public async Task RunAsync()
     {
         var current = await GetCurrentTag();
         Console.WriteLine(current?.ToString(3) ?? "");
@@ -39,7 +45,7 @@ public class GetCurrentReleaseVersionRunner : BaseRunner
     private readonly string _regexSemVer = @"^v\d+\.\d+\.\d+$";
     public async Task<List<System.Version>> GetVersions()
     {
-        var tags = await GetCommitInfoSince.GetTagHistory();
+        var tags = await _getCommitInfoSince.GetTagHistory();
         return tags.Where(p => Regex.IsMatch(p, _regexSemVer))
             .Select(p => new System.Version(p.Substring(1)))
             .OrderBy(v => v)

@@ -8,16 +8,18 @@
             "preLaunchTask": "build",
             "program": "${workspaceFolder}/src/bin/Debug/net10.0/DeployItSmart.dll",
             "args": [
-                "GenerateChangeLogRunner",
-                "-output",
+                "${input:pickCommand}",
+                "--output",
                 "C:\\Users\\Administrator\\source\\repos\\DeployItSmart\\.bin",
-                "-projects",
+                "--projects",
                 "src\\DeployItSmart.csproj",
-                "-linkCommits",
-                "-sinceTag",
-                "0.0.222"
+                "--linkCommits",
+                "--nonLinearMasterFix",
+                "--allowUnsafeVersionFromSinceTag",
+                "--sinceTag",
+                "0.0.1"
             ],
-            "cwd": "${workspaceFolder}",
+            "cwd": "${input:targetRepository}",
             "console": "internalConsole",
             "stopAtEntry": false
         },
@@ -32,6 +34,29 @@
                 "-g"
             ], // Quickly displays help text and exits instantly
             "preLaunchTask": "Install Local Tool Test" // 👈 Triggers your custom .NET tool pack/install task
+        }
+    ],
+    "inputs": [
+        {
+            "id": "pickCommand",
+            "type": "pickString",
+            "description": "Select the command to test",
+            "options": [
+                "CalculateNextReleaseVersionRunner",
+                "GenerateChangeLogRunner",
+                "GetCurrentReleaseVersionRunner",
+                "GetCommitInfoSinceRunner",
+                "GenerateCustomConfigRunner",
+                "GetTrackCommitMessagesRunner",
+                "LocalTrashCommitCleanerRunner"
+            ],
+            "default": "CalculateNextReleaseVersionRunner"
+        },
+        {
+            "id": "targetRepository",
+            "type": "promptString",
+            "description": "Target working directory",
+            "default": "${workspaceFolder}"
         }
     ]
 }

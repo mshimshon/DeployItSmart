@@ -2,35 +2,39 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DeployItSmart.Engine.ArgumentParser;
-using DeployItSmart.Model.Configuration.Runner;
+using DeployItSmart.Engine.Configuration;
+using DeployItSmart.Model.Configuration;
 using DeployItSmart.Model.DataStructure;
 using LibGit2Sharp;
+using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 
 namespace DeployItSmart.Engine.Runner;
 
-public class GetCommitInfoSinceRunner : BaseRunner
+public class GetCommitInfoSinceRunner : IRunner
 {
-    private JsonSerializerOptions jsonSerializerOption = new JsonSerializerOptions()
+    private readonly JsonSerializerOptions _jsonSerializerOption = new JsonSerializerOptions()
     {
         PropertyNameCaseInsensitive = true,
         WriteIndented = true,
         ReferenceHandler = ReferenceHandler.IgnoreCycles
 
     };
-    public GetCommitInfoSinceConf Configuration { get; init; }
-    private CommitFilter gitCommitFilterOldestFirst = new CommitFilter()
+    private ToolConf ToolConfig => GetToolConfiguration();
+
+    private CommitSearchParameters CommitSearchConfig => GetConfigurationFor<CommitSearchParameters>();
+    private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
     {
         SortBy = CommitSortStrategies.Reverse
     };
-    public GetCommitInfoSinceRunner(SimpleArgumentParser simpleArgument)
+    public GetCommitInfoSinceRunner()
     {
-        Configuration = new GetCommitInfoSinceConf(simpleArgument);
     }
-
-    public override async Task RunAsync()
+    public static IRunner Create() => new GetCommitInfoSinceRunner();
+    public static string GetCommandName() => nameof(GetCommitInfoSinceRunner);
+    public async Task RunAsync()
     {
-        var commits = await GetHistory(Configuration.SinceTag);
-        string json = JsonSerializer.Serialize(commits, jsonSerializerOption);
+        var commits = await GetHistory(CommitSearchConfig.SinceTag);
+        string json = JsonSerializer.Serialize(commits, _jsonSerializerOption);
         Console.WriteLine(json);
     }
     private static void FetchRemoteTags(Repository repo)
@@ -55,7 +59,7 @@ public class GetCommitInfoSinceRunner : BaseRunner
     {
         using var repo = new Repository(Environment.CurrentDirectory);
         FetchRemoteTags(repo);
-        string targetSha = repo.Commits.QueryBy(gitCommitFilterOldestFirst).FirstOrDefault()?.Sha ?? throw new Exception("Cannot find first commit.");
+        string targetSha = repo.Commits.QueryBy(_gitCommitFilterOldestFirst).FirstOrDefault()?.Sha ?? throw new Exception("Cannot find first commit.");
         bool includeTarget = true;
         if (sinceTag != default)
         {

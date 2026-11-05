@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
 using DeployItSmart;
+using DeployItSmart.Engine;
 using DeployItSmart.Engine.ArgumentParser;
-using DeployItSmart.Engine.Runner;
-using DeployItSmart.Engine.Runners;
+using DeployItSmart.Runners;
 Version appVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
 string formattedVersion = $"v{appVersion.ToString(3)}";
 
@@ -21,24 +21,9 @@ try
     if (!isValidMinimum)
         throw new Exception("Minimum one argument required CLI + CMD, example: depitsmart getCommitInfoSince");
     string command = args[0].ToLower();
-    var argumentParse = new SimpleArgumentParser(args);
-    BaseRunner? runner = default;
-    if (command.Equals(nameof(GetCommitInfoSinceRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new GetCommitInfoSinceRunner(argumentParse);
-    else if (command.Equals(nameof(GetTrackCommitMessagesRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new GetTrackCommitMessagesRunner(argumentParse);
-    else if (command.Equals(nameof(GetCurrentReleaseVersionRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new GetCurrentReleaseVersionRunner(argumentParse);
-    else if (command.Equals(nameof(GenerateChangeLogRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new GenerateChangeLogRunner(argumentParse);
-    else if (command.Equals(nameof(CalculateNextReleaseVersionRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new CalculateNextReleaseVersionRunner(argumentParse);
-    else if (command.Equals(nameof(GenerateCustomConfigRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new GenerateCustomConfigRunner(argumentParse);
-    else if (command.Equals(nameof(LocalTrashCommitCleanerRunner), StringComparison.OrdinalIgnoreCase))
-        runner = new LocalTrashCommitCleanerRunner(argumentParse);
-    else throw new Exception($"'{command}' not found.");
-    await runner.RunAsync();
+    RunnerUtility.ImportCustom();
+    RunnerUtility.Configure();
+    await RunnerUtility.ExecuteCommand(command);
 }
 catch (ExitException ex)
 {
@@ -48,5 +33,7 @@ catch (ExitException ex)
 catch (Exception ex)
 {
     Console.Error.WriteLine(ex.Message);
+
     Environment.Exit(1);
 }
+

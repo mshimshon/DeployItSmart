@@ -3,43 +3,40 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DeployItSmart.Engine.ArgumentParser;
+using DeployItSmart.Engine.Configuration;
+using DeployItSmart.Engine.Utils;
 using DeployItSmart.Engine.Runner;
-using DeployItSmart.Model.Configuration.Runner;
 using DeployItSmart.Model.DataStructure;
 using DeployItSmart.Model.DataStructure.Enums;
 using LibGit2Sharp;
+using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 
-namespace DeployItSmart.Engine.Runners;
+namespace DeployItSmart.Runners;
 
-public class LocalTrashCommitCleanerRunner : BaseRunner
+public class LocalTrashCommitCleanerRunner : IRunner
 {
-    private JsonSerializerOptions jsonSerializerOption = new JsonSerializerOptions()
+    private ToolConf ToolConfig => GetToolConfiguration();
+    private readonly GetCurrentReleaseVersionRunner _currentReleaseVersion;
+    private readonly GetTrackCommitMessagesRunner _getTrackCommitMessages;
+    private readonly MessageSearchTool _messageTool;
+    public LocalTrashCommitCleanerRunner()
     {
-        PropertyNameCaseInsensitive = true,
-        WriteIndented = true,
-        ReferenceHandler = ReferenceHandler.IgnoreCycles
-
-    };
-    public GetCurrentReleaseVersionRunner CurrentReleaseVersion { get; init; }
-    public GetTrackCommitMessagesRunner GetTrackCommitMessages { get; init; }
-    public MessageSearchTool MessageTool { get; init; }
-    public LocalTrashCommitCleanerRunner(SimpleArgumentParser simpleArgument)
-    {
-        CurrentReleaseVersion = new GetCurrentReleaseVersionRunner(simpleArgument);
-        GetTrackCommitMessages = new GetTrackCommitMessagesRunner(simpleArgument);
-        MessageTool = new MessageSearchTool();
+        _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
+        _getTrackCommitMessages = new GetTrackCommitMessagesRunner();
+        _messageTool = new MessageSearchTool();
     }
-
-    public override async Task RunAsync()
+    public static IRunner Create() => new LocalTrashCommitCleanerRunner();
+    public static string GetCommandName() => nameof(LocalTrashCommitCleanerRunner);
+    public async Task RunAsync()
     {
         await CleanCommits();
     }
 
     public async Task CleanCommits()
     {
-        var currentVersion = await CurrentReleaseVersion.GetCurrentTag();
+        var currentVersion = await _currentReleaseVersion.GetCurrentTag();
         string? sinceTag = currentVersion != default ? currentVersion.ToString(3) : null;
-        var history = await GetTrackCommitMessages.GetHistory(sinceTag);
+        var history = await _getTrackCommitMessages.GetHistory(sinceTag);
         if (history.Count <= 1) return;
         var lastCommit = history.First();
         // if (lastCommit.CountDirtyToken() > 0 && lastCommit.CountReleaseToken() <= 0)
@@ -49,17 +46,26 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
         // }
         Dictionary<TrackerReleaseType, List<string>> tokenMessages = new()
         {
-            [TrackerReleaseType.Breaking] = new List<string>(),
+            [TrackerReleaseType.SecurityBreaking] = new List<string>(),
+            [TrackerReleaseType.FeatureBreaking] = new List<string>(),
+            [TrackerReleaseType.FixBreaking] = new List<string>(),
+            [TrackerReleaseType.NoteBreaking] = new List<string>(),
+            [TrackerReleaseType.SecurityImportant] = new List<string>(),
+            [TrackerReleaseType.FeatureImportant] = new List<string>(),
+            [TrackerReleaseType.FixImportant] = new List<string>(),
+            [TrackerReleaseType.NoteImportant] = new List<string>(),
             [TrackerReleaseType.Feature] = new List<string>(),
+            [TrackerReleaseType.Security] = new List<string>(),
             [TrackerReleaseType.Fix] = new List<string>(),
             [TrackerReleaseType.Note] = new List<string>(),
+            [TrackerReleaseType.SponsorImportant] = new List<string>(),
             [TrackerReleaseType.Sponsor] = new List<string>(),
+            [TrackerReleaseType.ThanksImportant] = new List<string>(),
             [TrackerReleaseType.Thanks] = new List<string>(),
         };
 
         Dictionary<TrackerDirtyType, List<string>> tokenDirtyMessages = new()
         {
-            [TrackerDirtyType.Trace] = new List<string>(),
             [TrackerDirtyType.TraceNoTrigger] = new List<string>(),
             [TrackerDirtyType.WorkInProgress] = new List<string>(),
         };
@@ -129,29 +135,47 @@ public class LocalTrashCommitCleanerRunner : BaseRunner
     private string AddReleaseTokenToMessage(TrackerReleaseType tokenType, string message)
     {
         string token = string.Empty;
-        if (tokenType == TrackerReleaseType.Breaking)
-            token = MessageTool.ToolConfig.Configuration.ReleaseBreakingTokens[0];
+        if (tokenType == TrackerReleaseType.SecurityBreaking)
+            token = $"{ToolConfig.ReleaseSecurityTokens[0]}!";
+        else if (tokenType == TrackerReleaseType.SecurityImportant)
+            token = $"{ToolConfig.ReleaseSecurityTokens[0]}~";
+        else if (tokenType == TrackerReleaseType.Security)
+            token = ToolConfig.ReleaseSecurityTokens[0];
+        else if (tokenType == TrackerReleaseType.FeatureBreaking)
+            token = $"{ToolConfig.ReleaseFeatureTokens[0]}!";
+        else if (tokenType == TrackerReleaseType.FeatureImportant)
+            token = $"{ToolConfig.ReleaseFeatureTokens[0]}~";
         else if (tokenType == TrackerReleaseType.Feature)
-            token = MessageTool.ToolConfig.Configuration.ReleaseFeatureTokens[0];
+            token = ToolConfig.ReleaseFeatureTokens[0];
         else if (tokenType == TrackerReleaseType.Fix)
-            token = MessageTool.ToolConfig.Configuration.ReleaseFixTokens[0];
-        else if (tokenType == TrackerReleaseType.Note)
-            token = MessageTool.ToolConfig.Configuration.ReleaseNoteTokens[0];
+            token = ToolConfig.ReleaseFixTokens[0];
+        else if (tokenType == TrackerReleaseType.FixBreaking)
+            token = $"{ToolConfig.ReleaseFixTokens[0]}!";
+        else if (tokenType == TrackerReleaseType.FixImportant)
+            token = $"{ToolConfig.ReleaseFixTokens[0]}~";
         else if (tokenType == TrackerReleaseType.Sponsor)
-            token = MessageTool.ToolConfig.Configuration.ReleaseSponsorTokens[0];
+            token = ToolConfig.ReleaseSponsorTokens[0];
+        else if (tokenType == TrackerReleaseType.SponsorImportant)
+            token = $"{ToolConfig.ReleaseSponsorTokens[0]}~";
+        else if (tokenType == TrackerReleaseType.Thanks)
+            token = ToolConfig.ReleaseThanksTokens[0];
+        else if (tokenType == TrackerReleaseType.ThanksImportant)
+            token = $"{ToolConfig.ReleaseThanksTokens[0]}~";
+        else if (tokenType == TrackerReleaseType.NoteBreaking)
+            token = $"{ToolConfig.ReleaseNoteTokens[0]}!";
+        else if (tokenType == TrackerReleaseType.NoteImportant)
+            token = $"{ToolConfig.ReleaseNoteTokens[0]}~";
         else
-            token = MessageTool.ToolConfig.Configuration.ReleaseThanksTokens[0];
+            token = ToolConfig.ReleaseNoteTokens[0];
         return AddTokenKeyToMessage(token, message);
     }
     private string AddDirtyTokenToMessage(TrackerDirtyType tokenType, string message)
     {
         string token = string.Empty;
-        if (tokenType == TrackerDirtyType.Trace)
-            token = MessageTool.ToolConfig.Configuration.ReleaseNoLogTokens[0];
-        else if (tokenType == TrackerDirtyType.TraceNoTrigger)
-            token = MessageTool.ToolConfig.Configuration.ReleaseNoTriggerTokens[0];
+        if (tokenType == TrackerDirtyType.TraceNoTrigger)
+            token = ToolConfig.ReleaseNoTriggerTokens[0];
         else
-            token = MessageTool.ToolConfig.Configuration.ReleaseDirtyTokens[0];
+            token = ToolConfig.ReleaseDirtyTokens[0];
         return AddTokenKeyToMessage(token, message);
     }
     private string AddTokenKeyToMessage(string tokenKey, string message)

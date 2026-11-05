@@ -6,14 +6,20 @@ namespace DeployItSmart.Engine.ArgumentParser;
 
 public class SimpleArgumentParser
 {
-    private readonly string[] args;
+    private readonly string[] _args;
 
     public SimpleArgumentParser(string[] args)
     {
-        this.args = args;
+        _args = args;
     }
-
-    public bool CheckOptionalFlag(string key) => GetArgument<bool>(key, null!);
+    public static List<string> AvailableParameters { get; } = new();
+    public bool CheckOptionalFlag(string key)
+    {
+        string captureParam = $"{key} (Optional Flag)";
+        if (!AvailableParameters.Contains(captureParam))
+            AvailableParameters.Add(captureParam);
+        return GetArgument<bool>(key, null!);
+    }
 
     public bool CheckRequiredFlag(string key)
     {
@@ -25,6 +31,9 @@ public class SimpleArgumentParser
 
     public string? GetOptionalOption(string key)
     {
+        string captureParam = $"{key} \"VALUE\" (Optional)";
+        if (!AvailableParameters.Contains(captureParam))
+            AvailableParameters.Add(captureParam);
         try
         {
             return GetArgument<string?>(key, (s) => s);
@@ -40,20 +49,20 @@ public class SimpleArgumentParser
     {
         try
         {
-            for (var i = 0; i < args.Length; i++)
+            for (var i = 0; i < _args.Length; i++)
             {
-                if (!string.Equals(args[i], key, StringComparison.Ordinal))
+                if (!string.Equals(_args[i], key, StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 if (typeof(T) == typeof(bool))
                     return (T)(object)true;
 
-                if (i + 1 >= args.Length)
+                if (i + 1 >= _args.Length)
                 {
                     throw new ParserFailedException($"No value was provided for '{key}'.");
                 }
 
-                return converter(args[i + 1]);
+                return converter(_args[i + 1]);
             }
             if (typeof(T) == typeof(bool))
                 return (T)(object)false;
