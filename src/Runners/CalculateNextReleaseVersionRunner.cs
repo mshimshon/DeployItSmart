@@ -6,6 +6,7 @@ using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 using DeployItSmart.Model.DataStructure;
 using DeployItSmart.Model.DataStructure.Enums;
 using NuGet.Versioning;
+using static DeployItSmart.Engine.Utils.GithubWriter;
 
 namespace DeployItSmart.Runners;
 
@@ -29,6 +30,11 @@ public class CalculateNextReleaseVersionRunner : IRunner
     public async Task RunAsync()
     {
         var version = await GetNextVersion();
+        if (VersionRunnerConfig.GithubOutput)
+            if (VersionRunnerConfig.IsPreviewMode)
+                GithubOutput("version_next_preview", version.ToString());
+            else
+                GithubOutput("version_next", version.ToString());
         Console.WriteLine(version);
     }
 

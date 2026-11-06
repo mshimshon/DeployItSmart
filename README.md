@@ -72,17 +72,21 @@ depitsmart GenerateCustomConfigRunner # can be safely ran if you have config alr
 - `GetCurrentPreReleaseVersionRunner` return the current latest v1.0.0-preview.x tag
 ```bash
 depitsmart GetCurrentPreReleaseVersionRunner
+depitsmart GetCurrentPreReleaseVersionRunner --ghOutput # Print the value into github output 'version_current_preview' accessible ${{ steps.STEPID.outputs.version_current_preview }} (crash if value empty for safety)
 ```
 
 - `GetCurrentReleaseVersionRunner` return the current latest v tag version.
 ```bash
 depitsmart GetCurrentReleaseVersionRunner
+depitsmart GetCurrentReleaseVersionRunner --ghOutput # Print the value into github output 'version_current' accessible ${{ steps.STEPID.outputs.version_current }} (crash if value empty for safety)
 ```
 - `CalculateNextReleaseVersionRunner` print the next version based on commit changes fsince last v tag fails if no changes.
 ```bash
 depitsmart CalculateNextReleaseVersionRunner # calculate next natural version since last v tag
 depitsmart CalculateNextReleaseVersionRunner  --sinceTag "1.0.0" --allowUnsafeVersionFromSinceTag # Will calculate the version since the specified tag dangerous should not be use on production.
 depitsmart CalculateNextReleaseVersionRunner  --previewMode # will calculate the upcoming expected release as preview.X + N
+depitsmart CalculateNextReleaseVersionRunner  --previewMode --ghOutput # Print the value into github output 'version_next_preview' accessible ${{ steps.STEPID.outputs.version_next_preview }} (crash if value empty for safety)
+depitsmart CalculateNextReleaseVersionRunner --ghOutput # Print the value into github output 'version_next' accessible ${{ steps.STEPID.outputs.version_next }} (crash if value empty for safety)
 ```
 - `LocalTrashCommitCleanerRunner` Clean current commit history from dirty token squashing everything this command is used in our post-commit clean up script.
 ```bash
@@ -148,9 +152,8 @@ The `skipci~` token blocks your CI/CD workflow if the head commit hitting the br
 
 ## Version System
 
-The versioning layout keeps things incredibly straightforward. It uses a clean `1.1.1` pattern, saving the complex stuff (like `1.0.0-alpha.1`) strictly for dedicated pre-release branches.
+This system uses a streamlined `1.1.1` versioning pattern, keeping complex syntax (like `1.0.0-alpha.1`) restricted to dedicated pre-release branches. It offers a lightweight, boilerplate-free alternative to heavy enterprise solutions for managing packages and projects.
 
-This tool is designed from the ground up to help you maintain packages and projects without dealing with the massive boilerplate systems required by heavy-handed enterprise solutions.
 
 | Token       | Description                                                       | Version Change | Example          |
 | ----------- | ----------------------------------------------------------------- | -------------- | ---------------- |
@@ -164,11 +167,20 @@ This tool is designed from the ground up to help you maintain packages and proje
 | `note~:`    | Important Note without Breaking Changes                           | PATCH          | `1.0.0 -> 1.0.1` |
 | `note:`     | Release Note                                                      | PATCH          | `1.0.0 -> 1.0.1` |
 | `sponsor~:` | Realese Super Duper Sponsor!                                      | PATCH          | `1.0.0 -> 1.0.1` |
-| `sponsor:`  | Release Sponsor to link username                                  | PATCH          | `1.0.0 -> 1.0.1` |
+| `sponsor:`  | Release Sponsor                                                   | PATCH          | `1.0.0 -> 1.0.1` |
 | `thank~:`   | Release Super Thanks                                              | PATCH          | `1.0.0 -> 1.0.1` |
-| `thank:`    | Release Thank to link username                                    | PATCH          | `1.0.0 -> 1.0.1` |
+| `thank:`    | Release Thank                                                     | PATCH          | `1.0.0 -> 1.0.1` |
 | `wip:`      | Dirty Work in progress, should not be pushed.                     | PATCH          | `1.0.0 -> 1.0.1` |
 | `skipci~:`  | Push/Merge without triggering the release workflow if implemented | PATCH          | `1.0.0 -> 1.0.1` |
+
+### Rollover Versioning
+The system enforces a default limit of `10000` increments per tier to trigger automatic version rollovers.
+
+* **Mechanism:** `10000 Patches` -> `+1 Minor`, and `10000 Minors` -> `+1 Major`.
+* **Cap:** This logic purely calculates the next release version; multiple rollover of the same will still only increment the target version by a single unit.
+
+*Note: While automated workflow pushes automatically increment the patch version by default, these simulated updates do not contribute toward the rollover cap. The `10000` threshold must be met exclusively by valid, explicit commit tokens.*
+
 
 ## Multi-Project Setup
 
@@ -281,74 +293,46 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    # This ensures if head commit as trace! no workflow will be triggered for that push, note this is only really useful when pushing on main branch which should be unlikely
-    # but we are all rebels!
+
     if: ${{ (!contains(github.event.head_commit.message, 'skipci~') && !contains(github.event.workflow_run.head_commit.message, 'skipci~')) }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # VERY IMPORTANT ON BOTH BUILD AND DEPLOY! THIS MAKES SURE GITHUB CHECKOUT WITH FULL REPO HISTORY, FORGETTING THIS WILL LIKELY RESULT TO FAILURES SUCH (Object Id Not found.)
+          fetch-depth: 0 # 👈 IMPORTANT TO FORCE CHECKOUT WITH FULL HISTORY
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Installing Deploy It Smart
-        run: |
-          dotnet tool install -g DeployItSmart
+      - name: Building DeployItSmart ;)
+        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
+
 
       - name: Get Last Version Tag
-        id: get_last_version
+        id: version_control
         shell: bash
         run: |
-          # 1. Run the command and capture the text output
-          OUTPUT=$(depitsmart GetCurrentReleaseVersionRunner) || EXIT_CODE=$?
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit "$EXIT_CODE"
-          fi
-          LATEST_TAG=$(echo "$OUTPUT" | tr -d '\r' | tail -n 1 | xargs)
-          echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
 
-      - name: Calculate Version
-        id: get_version
-        shell: bash
-        run: |
-          OUTPUT=$(depitsmart CalculateNextReleaseVersionRunner) || EXIT_CODE=$?
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit $EXIT_CODE
-          fi
-          echo "Log: Successfully generated version number -> '$OUTPUT'"
-          echo "version=$OUTPUT" >> "$GITHUB_OUTPUT"
+      - name: Building Shipping Release DeployItSmart ;)
+        run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
 
       - name: Generate Release Notes
-        id: generate_release_notes
         shell: bash
-        run: |
-          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
-          VERSION="${{ steps.get_version.outputs.version }}"
-          mkdir -p "/tmp/artifacts/output"
-          OUTPUT="/tmp/artifacts/output"
-          depitsmart GenerateChangeLogRunner -output "$OUTPUT" -linkCommits
-          EXIT_CODE=$?
-          if [ $EXIT_CODE -ne 0 ]; thenw
-            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit $EXIT_CODE
-          fi
+        run: dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
 
-          CHANGELOG_FILE="$OUTPUT/_.$VERSION.md"
+      - name: Validating Output
+        shell: bash
+        run: bash -e .github/workflows/composition/validate_release_outputs.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
 
-          if [ ! -f "$CHANGELOG_FILE" ]; then
-            echo "::error::Required file _.md was not found in $OUTPUT"
-            exit 1
-          elif [ ! -s "$CHANGELOG_FILE" ]; then
-            echo "::error::The changelog file _.md exists but it is completely empty!"
-            exit 1
-          fi
 
 ```
 
@@ -372,9 +356,9 @@ To Keep branch history clean you must use [DeployItSmart](https://github.com/msh
 | `note~:`    | Important Note without Breaking Changes                           | PATCH          | `1.0.0 -> 1.0.1` |
 | `note:`     | Release Note                                                      | PATCH          | `1.0.0 -> 1.0.1` |
 | `sponsor~:` | Realese Super Duper Sponsor!                                      | PATCH          | `1.0.0 -> 1.0.1` |
-| `sponsor:`  | Release Sponsor to link username                                  | PATCH          | `1.0.0 -> 1.0.1` |
+| `sponsor:`  | Release Sponsor                                                   | PATCH          | `1.0.0 -> 1.0.1` |
 | `thank~:`   | Release Super Thanks                                              | PATCH          | `1.0.0 -> 1.0.1` |
-| `thank:`    | Release Thank to link username                                    | PATCH          | `1.0.0 -> 1.0.1` |
+| `thank:`    | Release Thank                                                     | PATCH          | `1.0.0 -> 1.0.1` |
 | `wip:`      | Dirty Work in progress, should not be pushed.                     | PATCH          | `1.0.0 -> 1.0.1` |
 | `skipci~:`  | Push/Merge without triggering the release workflow if implemented | PATCH          | `1.0.0 -> 1.0.1` |
 

@@ -33,135 +33,29 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Checking out Deploy Scripts
-        run: |
-          rm -rf /tmp/deploy_scripting
-          git clone --branch main "https://github.com/mshimshon/deploy_scripting.git" "/tmp/deploy_scripting"
-          cp -Rf "$GITHUB_WORKSPACE"/* /tmp/deploy_scripting/
-          chmod -R +x /tmp/deploy_scripting/
+      - name: Building DeployItSmart ;)
+        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
 
-      - name: Build Project
-        shell: bash
-        run: |
-          # Now --no-build works perfectly because Step 1 already created the files.
-          dotnet restore
-          dotnet build -c Release
-          dotnet build /tmp/deploy_scripting/src/DeployItSmart.csproj -c Release
 
       - name: Get Last Version Tag
-        id: get_last_version
+        id: version_control
         shell: bash
         run: |
-          OUTPUT=$(dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner) || EXIT_CODE=$?
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit 1
-          fi
-          LATEST_TAG=$(echo "$OUTPUT" | tr -d '\r' | tail -n 1 | xargs)
-          if [ -z "$LATEST_TAG" ]; then
-            echo "::error::Failed to resolve latest tag. Output was empty or invalid."
-            exit 1
-          fi
-          echo "tag=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
 
-      - name: Calculate Version
-        id: get_version
-        shell: bash
-        run: |
-          OUTPUT=$(dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner)
-          EXIT_CODE=$?
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit $EXIT_CODE
-          fi
-
-          echo "Log: Successfully generated version number -> '$OUTPUT'"
-          echo "version=$OUTPUT" >> "$GITHUB_OUTPUT"
-
-      - name: Publish Console
-        shell: bash
-        run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
-          OUT="/tmp/artifacts/output";
-          WIN_OUT="/tmp/artifacts/publish/win";
-          LINUX_OUT="/tmp/artifacts/publish/linux";
-          mkdir -p "$OUT"
-          mkdir -p "$WIN_OUT"
-          mkdir -p "$LINUX_OUT"
-          dotnet publish "$GITHUB_WORKSPACE/src/DeployItSmart.csproj" --self-contained true -r win-x64 -c Release -o "$WIN_OUT" -p:DebugSymbols=false -p:DebugType=none -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
-          dotnet publish "$GITHUB_WORKSPACE/src/DeployItSmart.csproj" --self-contained true -r linux-x64 -c Release -o "$LINUX_OUT" -p:DebugSymbols=false -p:DebugType=none -p:PublishAot=false -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
-          dotnet pack "$GITHUB_WORKSPACE/src/DeployItSmart.csproj" -c Release -o "$OUT" -p:DebugSymbols=false -p:DebugType=none -p:FileVersion="$VERSION" -p:InformationalVersion="$VERSION" -p:Version="$VERSION" -p:AssemblyVersion="$VERSION"
-          tar -czvf "$OUT/deployitsmart_win_x64.tar.gz" -C "$WIN_OUT" .
-          tar -czvf "$OUT/deployitsmart_linux_x64.tar.gz" -C "$LINUX_OUT" .
+      - name: Building Shipping Release DeployItSmart ;)
+        run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
 
       - name: Generate Release Notes
-        id: generate_release_notes
         shell: bash
-        run: |
-          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
-          VERSION="${{ steps.get_version.outputs.version }}"
-          OUTPUT="/tmp/artifacts/output"
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --sinceTag "$LATEST_TAG" --output "$OUTPUT"  --linkCommits
-          EXIT_CODE=$?
-          if [ $EXIT_CODE -ne 0 ]; then
-            echo "::error::Script failed with unexpected exit code: $EXIT_CODE"
-            exit $EXIT_CODE
-          fi
-
-          CHANGELOG_FILE="$OUTPUT/_.$VERSION.md"
-
-          if [ ! -f "$CHANGELOG_FILE" ]; then
-            echo "::error::Required file goodlife_changelog.md was not found in $OUTPUT"
-            exit 1
-          elif [ ! -s "$CHANGELOG_FILE" ]; then
-            echo "::error::The changelog file goodlife_changelog.md exists but it is completely empty!"
-            exit 1
-          fi
-
-          echo "=== CHANGELOG CONTENT START ==="
-          cat "$CHANGELOG_FILE"
-          echo "=== CHANGELOG CONTENT END ==="
-          echo "Changelog successfully generated and verified at $CHANGELOG_FILE"
+        run: dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
 
       - name: Validating Output
         shell: bash
-        run: |
-          LATEST_TAG="${{ steps.get_last_version.outputs.tag }}"
-          VERSION="${{ steps.get_version.outputs.version }}"
-          OUTPUT="/tmp/artifacts/output"
-
-          echo "Checking directory: $OUTPUT"
-
-          # 1. Define array of allowed/expected filenames
-          ALLOWED_FILES=(
-            "deployitsmart_win_x64.tar.gz"
-            "deployitsmart_linux_x64.tar.gz"
-            "DeployItSmart.$VERSION.nupkg"
-            "_.md"
-          )
-
-          # Helper to verify if an item is inside our array
-          contains_file() {
-            local e match="$1"
-            for e in "${ALLOWED_FILES[@]}"; do [[ "$e" == "$match" ]] && return 0; done
-            return 1
-          }
-
-          STATUS=0
-
-          # 2. Check for missing files (Expected but not found)
-          for file in "${ALLOWED_FILES[@]}"; do
-            if [ ! -f "$OUTPUT/$file" ]; then
-              echo "❌ Error: Required file missing -> $file"
-              STATUS=1
-            fi
-          done
-          ls $OUTPUT
-          # 4. Fail if any checks crashed
-          if [ $STATUS -ne 0 ]; then
-            echo "🚨 Validation failed!"
-            exit 1
-          fi
-
-          echo "✅ Validation passed successfully! Match complete."
+        run: bash -e .github/workflows/composition/validate_release_outputs.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
 

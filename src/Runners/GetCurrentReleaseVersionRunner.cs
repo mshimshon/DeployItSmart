@@ -10,6 +10,7 @@ using LibGit2Sharp;
 using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 using NuGet.Versioning;
 using DeployItSmart.Model.Configuration;
+using static DeployItSmart.Engine.Utils.GithubWriter;
 
 namespace DeployItSmart.Runners;
 
@@ -23,7 +24,7 @@ public class GetCurrentReleaseVersionRunner : IRunner
 
     };
     private ToolConf ToolConfig => GetToolConfiguration();
-    private ChangeLogParameters ChangeLogConfig => GetConfigurationFor<ChangeLogParameters>();
+    private VersionRunnerParameters VersionRunnerConfig => GetConfigurationFor<VersionRunnerParameters>();
     private GetCommitInfoSinceRunner _getCommitInfoSince;
     private readonly MessageSearchTool _messageTool;
     private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
@@ -42,6 +43,8 @@ public class GetCurrentReleaseVersionRunner : IRunner
     public async Task RunAsync()
     {
         var current = await GetCurrentTag();
+        if (VersionRunnerConfig.GithubOutput)
+            GithubOutput("version_current", current?.ToString() ?? throw new Exception("Current Version Null Required due to --ghOutput"));
         Console.WriteLine(current?.ToString() ?? "");
     }
     private readonly string _regexSemVer = @"^v\d+\.\d+\.\d+$";

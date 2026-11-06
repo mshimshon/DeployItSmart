@@ -40,13 +40,19 @@ public record class ToolConf
         {"_","My Project Name"}
     };
 
-    public string TagMarkdownComment { get; set; } = "Those are the post processing filtering, using regex to group and map to Markdown with ability to extract groups like so 'XXXXX' -> '[Visit {gp:1} At MyProfile](https://myprofile.com/{gp:0})'";
+    public string TagMarkdownExamplesComment { get; set; } = "Following are examples in commit message you use then as such {SOCIAL MEDIA;USERNAME OR ID;Display Name}";
 
-    public Dictionary<string, string> TagMarkdown { get; set; } = new()
+    public Dictionary<string, string> TagMarkdownExamples { get; set; } = new()
     {
-        {"@","[{this}](https://github.com/{this})"}
+        {@"\{gh;([^;]+);([^}]+)\}", "[{gp:2}](https://github.com/{gp:1})"},
+        {@"\{lkdin;([^;]+);([^}]+)\}", "[{gp:2}](https://www.linkedin.com/in/{gp:1})"},
+        {@"\{fbk;([^;]+);([^}]+)\}", "[{gp:2}](https://www.facebook.com/profile.php?id={gp:1})"},
+        {@"\{steam;([^;]+);([^}]+)\}", "[{gp:2}](https://steamcommunity.com/id/{gp:1})"},
+        {@"\{discord_user;([^;]+);([^}]+)\}", "[{gp:2}](https://discord.com/users/{gp:1})"},
+        {@"\{discord;([^;]+);([^}]+)\}", "[{gp:2}](https://discord.gg/{gp:1})"},
     };
-
+    public string TagMarkdownComment { get; set; } = "Those are the post processing filtering, using regex to group and map to Markdown with ability to extract groups like so 'XXXXX' -> '[Visit {gp:1} At MyProfile](https://myprofile.com/{gp:0})'";
+    public Dictionary<string, string> TagMarkdown { get; set; } = new();
     public string TokensComment { get; set; } = "You can add or remove tokens for each sections for you aren't using standard... each token will be used as such in commit 'token:', 'token!:' or 'token~:' you do not need to include '!' nor '~' ";
     public string TokensComment2 { get; set; } = "'!', '~' are included as code standard of this tool ! = Breaking Change Bump Major, ~ = Important Change but not breaking code bump normally and no symbol = regular change no special attention. ";
 
@@ -75,4 +81,11 @@ public record class ToolConf
     public string MinorRolloverMajorMinorComment { get; set; } = "Design to define how many minors is allowed until the minors count is so high that is just count towards major bump (Max 10000)";
     public int MinorRolloverMajor { get; set; } = 10000;
     public string RolloverNoteComment { get; set; } = "the rollover is exponentional thus why the limit of 10K... meaning if minor to major threshold is 10 and patch to minor is 2 then patch count at 20 will rollover to major.";
+
+
+    public string ActWorkflowBuilderComment { get; set; } = "The Act Workflow builder is a simple merging tool to allow you to break your CICD into multiple files and merge them be making a creator builder.";
+    public Dictionary<string, Dictionary<string, List<string>>> ActWorkflowBuilder { get; set; } = new()
+    {
+    };
+
 }

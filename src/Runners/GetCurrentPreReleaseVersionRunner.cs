@@ -10,6 +10,7 @@ using LibGit2Sharp;
 using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 using NuGet.Versioning;
 using DeployItSmart.Model.Configuration;
+using static DeployItSmart.Engine.Utils.GithubWriter;
 
 namespace DeployItSmart.Runners;
 
@@ -43,6 +44,8 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
     public async Task RunAsync()
     {
         var current = await GetCurrentPreviewTag();
+        if (VersionRunnerConfig.GithubOutput)
+            GithubOutput("version_current_preview", current?.ToString() ?? throw new Exception("Current Version Null Required due to --ghOutput"));
         Console.WriteLine(current?.ToString() ?? "");
     }
     private readonly string _regexPreviewSemVer = @"^v\d+\.\d+\.\d+-preview\.\d+$";

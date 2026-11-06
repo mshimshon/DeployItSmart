@@ -434,7 +434,7 @@ public class GenerateChangeLogRunner : IRunner
             else
                 blocks.AddRange(projectSplitBlocks["_"]);
             MdDocument doc = new MdDocument(blocks);
-            string outputPath = Path.Combine(ChangeLogConfig.OutputLogs, $"_.md");
+            string outputPath = Path.Combine(ChangeLogConfig.OutputLogs, $"_.{nextVersion}.md");
             System.Console.WriteLine(doc.ToString());
             doc.Save(outputPath);
         }

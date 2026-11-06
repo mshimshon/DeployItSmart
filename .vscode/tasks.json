@@ -2,6 +2,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Act Build Workflow",
+            "command": "act",
+            "type": "shell",
+            "args": [
+                "-W",
+                ".github/workflows/build.yml"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
             "label": "build",
             "command": "dotnet",
             "type": "process",
