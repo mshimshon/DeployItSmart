@@ -73,7 +73,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version_control.outputs.version_next }}
-          body_path: "/tmp/artifacts/output/_.md"
+          body_path: "/tmp/artifacts/output/_${{ steps.version_control.outputs.version_next }}.md"
           fail_on_unmatched_files: true
           files: |
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
