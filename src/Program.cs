@@ -30,6 +30,11 @@ catch (ExitException ex)
     Console.Error.WriteLine(ex.Message);
     Environment.Exit(ex.ExitCode);
 }
+catch (TargetInvocationException ex)
+{
+    Console.Error.WriteLine(ex.InnerException?.Message);
+    Console.Error.WriteLine(ex.InnerException?.StackTrace);
+}
 catch (Exception ex)
 {
     Console.Error.WriteLine(ex.Message);
