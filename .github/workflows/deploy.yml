@@ -26,62 +26,63 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - name: Download Build Output
+        uses: actions/download-artifact@v4
         with:
-          fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
+          name: build-assets
+          path: /tmp/artifacts/output
+          run-id: ${{ !env.ACT && github.event.workflow_run.id || '' }}
+          github-token: ${{ !env.ACT && secrets.GITHUB_TOKEN || '' }}
 
-      - name: Setup .NET 10 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Building DeployItSmart ;)
-        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
-
-
-      - name: Get Last Version Tag
+      - name: Load Variables into Outputs
         id: version_control
         shell: bash
         run: |
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
+          ls -laR /tmp/artifacts || echo "no /tmp/artifacts"
+          grep -E '^[A-Za-z_][A-Za-z0-9_]*=' /tmp/artifacts/output/build.env | tr -d '\r' >> "$GITHUB_OUTPUT"
 
-      - name: Building Shipping Release DeployItSmart ;)
-        run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
-        env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
-
-      - name: Generate Release Notes
+      - name: Use the Passed Versions
+        id: release_version
         shell: bash
-        run: dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+        run: |
+          if [ "${{ steps.version_control.outputs.trigger_branch }}" = "main-dev" ]; then
+              echo "This is a Preview Release";
+              echo "Next Natural to version: ${{ steps.version_control.outputs.version_next }}"
+              echo "The current version: ${{ steps.version_control.outputs.version_current }}"
+              echo "Next Actual to version: ${{ steps.version_control.outputs.version_next_preview }}"
+              echo "The current preview version: ${{ steps.version_control.outputs.version_current_preview }}"
+              echo "release_version=${{ steps.version_control.outputs.version_next_preview }}" >> "$GITHUB_OUTPUT"
+          else
+              echo "This is a Stable Release";
+              echo "Next Actual to version: ${{ steps.version_control.outputs.version_next }}"
+              echo "The current version: ${{ steps.version_control.outputs.version_current }}"
+              echo "release_version=${{ steps.version_control.outputs.version_next }}" >> "$GITHUB_OUTPUT"
+          fi
 
-      - name: Validating Output
-        shell: bash
-        run: bash -e .github/workflows/composition/validate_release_outputs.sh
-        env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
 
 
       - name: NuGet login (OIDC → temp API key)
+        if: ${{ !env.ACT }}
         uses: NuGet/login@v1
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Create GitHub Release
+        if: ${{ !env.ACT }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.version_control.outputs.version_next }}
-          body_path: "/tmp/artifacts/output/_.${{ steps.version_control.outputs.version_next }}.md"
+          tag_name: v${{ steps.release_version.outputs.release_version }}
+          body_path: "/tmp/artifacts/output/_.${{ steps.release_version.outputs.release_version }}.md"
           fail_on_unmatched_files: true
           files: |
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
-            /tmp/artifacts/output/DeployItSmart.${{ steps.version_control.outputs.version_next }}.nupkg
-            /tmp/artifacts/output/_.${{ steps.version_control.outputs.version_next }}.md
+            /tmp/artifacts/output/DeployItSmart.${{ steps.release_version.outputs.release_version }}.nupkg
+            /tmp/artifacts/output/_.${{ steps.release_version.outputs.release_version }}.md
 
       - name: Push all NuGet packages with retry
+        if: ${{ !env.ACT }}
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 30
@@ -89,7 +90,7 @@ jobs:
           retry_wait_seconds: 10
           command: |
             set -eu
-            VERSION="${{ steps.version_control.outputs.version_next }}"
+            VERSION="${{ steps.release_version.outputs.release_version }}"
 
             for PKG in /tmp/artifacts/output/*.nupkg; do
               echo "Pushing $PKG"

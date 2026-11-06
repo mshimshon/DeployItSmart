@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - main-dev
 
   workflow_dispatch:
 
@@ -43,6 +44,11 @@ jobs:
         run: |
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
+          if [ "${{ github.ref_name }}" = "main-dev" ]; then
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput --previewMark "rc"
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode --previewMark "rc"
+          fi
+
 
       - name: Building Shipping Release DeployItSmart ;)
         run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
@@ -58,4 +64,25 @@ jobs:
         run: bash -e .github/workflows/composition/validate_release_outputs.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+
+      - name: Save Variables for Deploy
+        shell: bash
+        run: |
+          mkdir -p /tmp/artifacts/output
+          echo "version_next=${{ steps.version_control.outputs.version_next }}" >> /tmp/artifacts/output/build.env
+          echo "version_current=${{ steps.version_control.outputs.version_current }}" >> /tmp/artifacts/output/build.env
+          echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
+          if [ "${{ github.ref_name }}" = "main-dev" ]; then
+            echo "version_current_preview=${{ steps.version_control.outputs.version_current_preview }}" >> /tmp/artifacts/output/build.env
+            echo "version_next_preview=${{ steps.version_control.outputs.version_next_preview }}" >> /tmp/artifacts/output/build.env
+          fi
+          ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"
+
+      - name: Upload Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets # Label
+          path: /tmp/artifacts/output/
+
+
 

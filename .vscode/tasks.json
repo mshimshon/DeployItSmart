@@ -2,14 +2,35 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Act Build Workflow",
+            "label": "Act Workflow Build",
             "command": "act",
             "type": "shell",
             "args": [
-                "-W",
-                ".github/workflows/build.yml"
+                "push",
+                "--artifact-server-path",
+                ".\\.bin\\.artifacts",
+                "-e",
+                ".github/workflows/event.json",
             ],
             "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Act Workflow Testing",
+            "command": "act",
+            "type": "shell",
+            "args": [
+                "workflow_dispatch",
+                "-W",
+                ".github/workflows/deploy.yml",
+                "-e",
+                ".github/workflows/event.json",
+                "--artifact-server-path",
+                ".\\.bin\\.artifacts",
+            ],
+            "problemMatcher": "$msCompile",
+            "dependsOn": [
+                "Act Workflow Build",
+            ],
         },
         {
             "label": "build",
