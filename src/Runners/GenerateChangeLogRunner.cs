@@ -21,6 +21,7 @@ public class GenerateChangeLogRunner : IRunner
 
     private ToolConf ToolConfig => GetToolConfiguration();
     private ChangeLogParameters ChangeLogConfig => GetConfigurationFor<ChangeLogParameters>();
+    private VersionRunnerParameters VersionRunnerConfig => GetConfigurationFor<VersionRunnerParameters>();
     private CommitSearchParameters CommitSearchConfig => GetConfigurationFor<CommitSearchParameters>();
     private readonly CalculateNextReleaseVersionRunner _calculateNextReleaseVersion;
     private readonly GetTrackCommitMessagesRunner _getTrackCommitMessages;
@@ -336,7 +337,7 @@ public class GenerateChangeLogRunner : IRunner
         else if (currentVersion == default && !IsFirstRelease)
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
         else if (currentVersion != default)
-            if (ChangeLogConfig.IsPreviewMode && currentPrerelease != default && currentPrerelease > currentVersion)
+            if (VersionRunnerConfig.IsPreviewMode && currentPrerelease != default && currentPrerelease > currentVersion)
                 currentVersion = currentPrerelease;
 
         var commits = await _getTrackCommitMessages.GetHistory(currentVersion!.ToString());

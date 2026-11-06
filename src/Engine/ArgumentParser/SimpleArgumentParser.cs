@@ -67,12 +67,13 @@ public class SimpleArgumentParser
             if (typeof(T) == typeof(bool))
                 return (T)(object)false;
         }
-        catch (System.Exception)
+        catch (System.Exception ex)
         {
-
+            System.Console.Error.WriteLine($"{ex.Message}");
             throw new ParserFailedException($"Argument '{key}' value not set or conversion failed.");
         }
 
+        System.Console.Error.WriteLine($"Argument '{key}' was not found.");
 
         throw new ParserFailedException($"Argument '{key}' was not found.");
     }

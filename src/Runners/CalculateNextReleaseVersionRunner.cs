@@ -13,7 +13,7 @@ public class CalculateNextReleaseVersionRunner : IRunner
 {
     private ToolConf ToolConfig => GetToolConfiguration();
     private CommitSearchParameters CommitSearchConfig => GetConfigurationFor<CommitSearchParameters>();
-
+    private VersionRunnerParameters VersionRunnerConfig => GetConfigurationFor<VersionRunnerParameters>();
     private readonly GetCurrentReleaseVersionRunner _currentReleaseVersion;
     private readonly GetCurrentPreReleaseVersionRunner _getCurrentPreReleaseVersion;
     private readonly GetTrackCommitMessagesRunner _getTrackCommitMessages;
@@ -75,13 +75,13 @@ public class CalculateNextReleaseVersionRunner : IRunner
         */
         if (latestPreview != default && latestPreview > nextVersion)
             throw new Exception($"Last Preview is greater than next logical release this should be impossible unless the git tag history got changed manually cannot proceed next stable = {nextVersion} vs current preview = {latestPreview}");
-        if (CommitSearchConfig.IsPreviewMode && (latestPreview == default || latestPreview < latestStable))
+        if (VersionRunnerConfig.IsPreviewMode && (latestPreview == default || latestPreview < latestStable))
         {
-            var releaseLabels = new[] { CommitSearchConfig.PreviewMark, "1" };
+            var releaseLabels = new[] { VersionRunnerConfig.PreviewMark, "1" };
             nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, releaseLabels!, null);
 
         }
-        else if (CommitSearchConfig.IsPreviewMode && latestPreview != default && latestPreview >= latestStable)
+        else if (VersionRunnerConfig.IsPreviewMode && latestPreview != default && latestPreview >= latestStable)
         {
             nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, latestPreview.ReleaseLabels, null);
             nextVersion = nextVersion.IncrementPrelease();

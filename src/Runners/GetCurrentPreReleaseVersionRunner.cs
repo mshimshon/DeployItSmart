@@ -23,7 +23,7 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
 
     };
     private ToolConf ToolConfig => GetToolConfiguration();
-    private ChangeLogParameters ChangeLogConfig => GetConfigurationFor<ChangeLogParameters>();
+    private VersionRunnerParameters VersionRunnerConfig => GetConfigurationFor<VersionRunnerParameters>();
     private GetCommitInfoSinceRunner _getCommitInfoSince;
     private readonly MessageSearchTool _messageTool;
     private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
@@ -37,7 +37,7 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
     {
         _getCommitInfoSince = new GetCommitInfoSinceRunner();
         _messageTool = new MessageSearchTool();
-        _regexPreviewSemVer = @$"^v\d+\.\d+\.\d+-{ChangeLogConfig.PreviewMark}\.\d+$";
+        _regexPreviewSemVer = @$"^v\d+\.\d+\.\d+-{VersionRunnerConfig.PreviewMark}\.\d+$";
     }
 
     public async Task RunAsync()

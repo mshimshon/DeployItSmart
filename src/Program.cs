@@ -34,6 +34,7 @@ catch (TargetInvocationException ex)
 {
     Console.Error.WriteLine(ex.InnerException?.Message);
     Console.Error.WriteLine(ex.InnerException?.StackTrace);
+    Environment.Exit(1);
 }
 catch (Exception ex)
 {
