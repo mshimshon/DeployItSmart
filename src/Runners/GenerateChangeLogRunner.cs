@@ -98,7 +98,7 @@ public class GenerateChangeLogRunner : IRunner
         {
             try
             {
-                System.Console.Error.WriteLine($"Testing Pattern: {pattern.Key} -> {pattern.Value} | {data}");
+                Terminal.WriteLine($"Testing Pattern: {pattern.Key} -> {pattern.Value} | {data}");
                 if (!Regex.IsMatch(unclean, pattern.Key))
                     continue;
                 unclean = Regex.Replace(unclean, pattern.Key, match =>
@@ -109,7 +109,7 @@ public class GenerateChangeLogRunner : IRunner
                             var value = match.Groups[i].Value;
                             replaceWith = replaceWith.Replace($"{{gp:{i}}}", value);
                         }
-                        System.Console.Error.WriteLine($"Cleaning Metadata: {pattern.Key} -> {pattern.Value} | {replaceWith}");
+                        Terminal.WriteLine($"Cleaning Metadata: {pattern.Key} -> {pattern.Value} | {replaceWith}");
 
                         return replaceWith;
                     });
@@ -419,7 +419,7 @@ public class GenerateChangeLogRunner : IRunner
                 string filename = item.Key;
                 if (filename != "_") filename = Path.GetFileNameWithoutExtension(item.Key);
                 string outputPath = Path.Combine(ChangeLogConfig.OutputLogs, $"{filename}.{nextVersion}.md");
-                System.Console.WriteLine(doc.ToString());
+                Terminal.WriteLine(doc.ToString());
                 doc.Save(outputPath);
             }
         }
@@ -435,7 +435,7 @@ public class GenerateChangeLogRunner : IRunner
                 blocks.AddRange(projectSplitBlocks["_"]);
             MdDocument doc = new MdDocument(blocks);
             string outputPath = Path.Combine(ChangeLogConfig.OutputLogs, $"_.{nextVersion}.md");
-            System.Console.WriteLine(doc.ToString());
+            Terminal.WriteLine(doc.ToString());
             doc.Save(outputPath);
         }
     }

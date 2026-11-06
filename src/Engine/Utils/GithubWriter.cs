@@ -12,7 +12,7 @@ public static class GithubWriter
         string? githubOutput = Environment.GetEnvironmentVariable("GITHUB_OUTPUT");
         if (!string.IsNullOrEmpty(githubOutput) && File.Exists(githubOutput))
         {
-            System.Console.WriteLine(githubOutput);
+            Terminal.WriteLine(githubOutput);
             List<string> artifacts = new();
             Dictionary<string, string> outputs = new();
             foreach (var item in File.ReadAllLines(githubOutput))
@@ -28,7 +28,7 @@ public static class GithubWriter
                 if (string.IsNullOrWhiteSpace(item.Value))
                     throw new Exception($"{item.Key} is required when using --ghOutput the output must be define or crash workflow purposefully. ");
                 outputs[item.Key] = item.Value;
-                System.Console.WriteLine($"{item.Key} is set in output.");
+                Terminal.WriteLine($"{item.Key} is set in output.");
 
             }
             artifacts.AddRange(outputs.Select(p => $"{p.Key}={p.Value}"));
@@ -37,7 +37,7 @@ public static class GithubWriter
         else
         {
             foreach (var item in addOutput)
-                System.Console.WriteLine($"{item.Key} = XXXXX is NOT set as it runs outside github action.");
+                Terminal.WriteLine($"{item.Key} = XXXXX is NOT set as it runs outside github action.");
         }
     }
 }

@@ -37,10 +37,10 @@ public static class RunnerUtility
     public static async Task ExecuteCommand(string command)
     {
         command = command.ToLower();
-        System.Console.Error.WriteLine("---------");
+        Terminal.WriteLine("---------");
         System.Console.Error.WriteLine($"Requested Command: {command}");
         System.Console.Error.WriteLine($"Using Parameters: {string.Join(" ", Environment.GetCommandLineArgs())}");
-        System.Console.Error.WriteLine("---------");
+        Terminal.WriteLine("---------");
         if (!_runners.ContainsKey(command))
         {
             foreach (var item in _runners)
@@ -53,11 +53,10 @@ public static class RunnerUtility
         var method = _runners[command].GetMethod(nameof(IRunner.Create), BindingFlags.Public | BindingFlags.Static);
         if (SimpleArgumentParser.AvailableParameters.Count > 0)
         {
-            System.Console.Error.WriteLine("Available Optional Arguments");
+            Terminal.WriteLine("Available Optional Arguments");
             foreach (var item in SimpleArgumentParser.AvailableParameters)
             {
-                System.Console.Error.WriteLine(item);
-
+                Terminal.WriteLine(item);
             }
         }
 

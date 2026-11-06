@@ -37,7 +37,7 @@ dotnet tool install -g DeployItSmart
 ```
 
 ## How to Use
-
+- `--verbose` to print details (Not Recommended in Production, Less Runtime Runner)
 - `GetTrackCommitMessagesRunner` to print the commit tracked messages json object array
 ```bash
 depitsmart GetTrackCommitMessagesRunner # All since first commit (Dangerous if massive amount of commit in long lived projects.)
