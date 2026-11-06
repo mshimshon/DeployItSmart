@@ -72,13 +72,14 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.get_version.outputs.version_next }}
+          tag_name: v${{ steps.version_control.outputs.version_next }}
           body_path: "/tmp/artifacts/output/_.md"
+          fail_on_unmatched_files: true
           files: |
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
-            /tmp/artifacts/output/DeployItSmart.${{ steps.get_version.outputs.version_next }}.nupkg
-            /tmp/artifacts/output/_.${{ steps.get_version.outputs.version_next }}.md
+            /tmp/artifacts/output/DeployItSmart.${{ steps.version_control.outputs.version_next }}.nupkg
+            /tmp/artifacts/output/_.${{ steps.version_control.outputs.version_next }}.md
 
       - name: Push all NuGet packages with retry
         uses: nick-invision/retry@v2
@@ -88,7 +89,7 @@ jobs:
           retry_wait_seconds: 10
           command: |
             set -eu
-            VERSION="${{ steps.get_version.outputs.version_next }}"
+            VERSION="${{ steps.version_control.outputs.version_next }}"
 
             for PKG in /tmp/artifacts/output/*.nupkg; do
               echo "Pushing $PKG"
