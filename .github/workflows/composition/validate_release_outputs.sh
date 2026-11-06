@@ -4,7 +4,21 @@
 # -o pipefail: Prevent errors in a pipeline from being masked
 set -euo pipefail
 
-VERSION_NEXT="${VERSION_NEXT}"
+if [ "$BRANCH" = "main-dev" ]; then
+  if [ -z "$VERSION_NEXT_PREVIEW" ]; then
+    echo "::error::main-dev build but VERSION_NEXT_PREVIEW is empty" >&2
+    exit 1
+  fi
+  VERSION="$VERSION_NEXT_PREVIEW"
+else
+  if [ -z "$VERSION_NEXT" ]; then
+    echo "::error::VERSION_NEXT is empty" >&2
+    exit 1
+  fi
+  VERSION="$VERSION_NEXT"
+fi
+
+echo "Releasing version: $VERSION"
 OUTPUT="/tmp/artifacts/output"
 
 echo "Checking directory: $OUTPUT"
@@ -13,8 +27,8 @@ echo "Checking directory: $OUTPUT"
 ALLOWED_FILES=(
   "deployitsmart_win_x64.tar.gz"
   "deployitsmart_linux_x64.tar.gz"
-  "DeployItSmart.$VERSION_NEXT.nupkg"
-  "_.$VERSION_NEXT.md"
+  "DeployItSmart.$VERSION.nupkg"
+  "_.$VERSION.md"
 )
 
 # Fail immediately if a required file is missing

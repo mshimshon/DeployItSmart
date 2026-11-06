@@ -54,6 +54,8 @@ jobs:
         run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name == 'main-dev' }}
+          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
 
       - name: Generate Release Notes
         shell: bash
@@ -64,6 +66,8 @@ jobs:
         run: bash -e .github/workflows/composition/validate_release_outputs.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name == 'main-dev' }}
+          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
 
       - name: Save Variables for Deploy
         shell: bash
