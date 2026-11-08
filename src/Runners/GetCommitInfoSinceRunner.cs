@@ -68,7 +68,12 @@ public class GetCommitInfoSinceRunner : IRunner
                 throw new Exception($"Tag: {sinceTag} Not Found Among Tags: {string.Join(',', repo.Tags.Select(p => p.FriendlyName))}");
             targetSha = tag.PeeledTarget.Sha;
             includeTarget = false;
+            bool confirmTargetInHistory = repo.Commits.Any(p => p.Id.Sha == targetSha);
+            if (!confirmTargetInHistory)
+                throw new Exception($"Tag: {sinceTag} is not in the history of {repo.Head.CanonicalName} this is most likely due to misconfiguration of repository should enable rebase merge for PR.");
+
         }
+
         List<CommitInfoStructure> targetedExtraction = [];
         foreach (Commit commit in repo.Commits)
         {
