@@ -67,7 +67,7 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
-      - name: Upload Preview Tag
+      - name: Upload Preview Tagd
         if: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
         shell: bash
         run: |
