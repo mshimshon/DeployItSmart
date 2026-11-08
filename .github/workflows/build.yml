@@ -61,9 +61,11 @@ jobs:
       - name: Generate Release Notes
         shell: bash
         run: |
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+
           if [ "${{ github.ref_name }}" = "main-dev" ]; then
             dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode --previewMark "rc"
+          else
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
           fi
 
       - name: Validating Output
