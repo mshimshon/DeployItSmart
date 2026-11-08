@@ -68,7 +68,7 @@ jobs:
           user: ${{ secrets.NUGET_USER }}
 
       - name: Upload Preview Tag
-        if:  ${{ contains(steps.version_control.outputs.trigger_branch, 'main-dev') }}
+        if: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
         shell: bash
         run: |
           git fetch origin main-dev
@@ -83,7 +83,7 @@ jobs:
           tag_name: v${{ steps.release_version.outputs.release_version }}
           body_path: "/tmp/artifacts/output/_.${{ steps.release_version.outputs.release_version }}.md"
           fail_on_unmatched_files: true
-          prerelease:  ${{ contains(steps.version_control.outputs.trigger_branch, 'main-dev') }}
+          prerelease: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
           files: |
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
