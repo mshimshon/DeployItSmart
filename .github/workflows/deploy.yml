@@ -75,7 +75,7 @@ jobs:
           tag_name: v${{ steps.release_version.outputs.release_version }}
           body_path: "/tmp/artifacts/output/_.${{ steps.release_version.outputs.release_version }}.md"
           fail_on_unmatched_files: true
-          prerelease: ${{ github.ref_name == 'main-dev' }}
+          prerelease: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
           files: |
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
