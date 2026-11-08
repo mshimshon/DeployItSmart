@@ -8,8 +8,13 @@ public record class ToolConf
     public bool UseCustomScriptLoader { get; set; } = false;
     public string InitialVersionComment { get; set; } = "Initial Release version when using --isFirstRelease.";
     public string InitialVersion { get; set; } = "0.0.1";
-    public string MasterReleaseBranchComment { get; set; } = "Remote Master Branch";
-    public string MasterReleaseBranch { get; set; } = "main";
+    public string ReleasePromotionFlowComment { get; set; } = "The release promotion flow is hardcoded strictly in order from behind to ahead or from stable to least stable release flow.";
+    public Dictionary<string, string?> ReleasePromotionFlow { get; set; } = new()
+    {
+        {"main", null},
+        {"main-beta", "rc"},
+        {"main-alpha", "alpha"},
+    };
     public string EmptyLogMessageComment { get; set; } = "When you are not using --autoFailEmptyResult the generator will put that message in empty logs for master and projects.";
     public string EmptyLogMessage { get; set; } = "This release has no information.";
 

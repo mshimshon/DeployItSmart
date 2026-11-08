@@ -84,7 +84,7 @@ public class CalculateNextReleaseVersionRunner : IRunner
         if (VersionRunnerConfig.IsPreviewMode && (latestPreview == default || latestPreview < latestStable))
         {
             var releaseLabels = new[] { VersionRunnerConfig.PreviewMark, "1" };
-            nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, releaseLabels!, null);
+            nextVersion = new(nextVersion.Major, major > 0 ? 0 : minor > 0 ? nextVersion.Minor : nextVersion.Minor + 1, 0, releaseLabels!, null);
 
         }
         else if (VersionRunnerConfig.IsPreviewMode && latestPreview != default && latestPreview >= latestStable)

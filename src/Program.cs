@@ -1,7 +1,9 @@
 ﻿using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using DeployItSmart;
 using DeployItSmart.Engine;
 using DeployItSmart.Engine.ArgumentParser;
+using DeployItSmart.Engine.Utils;
 using DeployItSmart.Runners;
 Version appVersion = Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
 string formattedVersion = $"v{appVersion.ToString(3)}";
@@ -23,6 +25,7 @@ try
     string command = args[0].ToLower();
     RunnerUtility.ImportCustom();
     RunnerUtility.Configure();
+    ServiceAccessor.Register<IGitSmart, GitSmart>(new GitSmart());
     await RunnerUtility.ExecuteCommand(command);
 }
 catch (ExitException ex)
