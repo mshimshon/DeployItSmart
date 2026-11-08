@@ -3,7 +3,9 @@
 # -u: Treat unset variables as an error
 # -o pipefail: Prevent errors in a pipeline from being masked
 set -euo pipefail
-
+VERSION_NEXT="${VERSION_NEXT:-}"
+VERSION_NEXT_PREVIEW="${VERSION_NEXT_PREVIEW:-}"
+BRANCH="${BRANCH:-}"
 if [ "$BRANCH" = "main-dev" ]; then
   if [ -z "$VERSION_NEXT_PREVIEW" ]; then
     echo "::error::main-dev build but VERSION_NEXT_PREVIEW is empty" >&2

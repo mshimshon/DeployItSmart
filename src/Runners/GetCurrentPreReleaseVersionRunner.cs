@@ -38,18 +38,22 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
     {
         _getCommitInfoSince = new GetCommitInfoSinceRunner();
         _messageTool = new MessageSearchTool();
-        if (!string.IsNullOrWhiteSpace(VersionRunnerConfig.PreviewMark))
-            _regexPreviewSemVer = @$"^v\d+\.\d+\.\d+-{VersionRunnerConfig.PreviewMark}\.\d+$";
+        _regexPreviewSemVer = @$"^v\d+\.\d+\.\d+-{VersionRunnerConfig.PreviewMark}\.\d+$";
     }
 
     public async Task RunAsync()
     {
         var current = await GetCurrentPreviewTag();
         if (VersionRunnerConfig.GithubOutput)
-            GithubOutput("version_current_preview", current?.ToString() ?? throw new Exception("Current Version Null Required due to --ghOutput"));
+            if (current != default)
+                GithubOutput("version_current_preview", current.ToString());
+            else if (VersionRunnerConfig.IsFirstRelease)
+                GithubOutput("version_current_preview", $"0.0.0-{VersionRunnerConfig.PreviewMark}.1");
+            else
+                throw new Exception("Current Version Null Required due to --ghOutput and no --isFirstRelease");
         Console.WriteLine(current?.ToString() ?? "");
     }
-    private readonly string _regexPreviewSemVer = @"^v\d+\.\d+\.\d+-preview\.\d+$";
+    private readonly string _regexPreviewSemVer = default!;
     public async Task<List<NuGetVersion>> GetPreviewVersions()
     {
         var tags = await _getCommitInfoSince.GetTagHistory();
