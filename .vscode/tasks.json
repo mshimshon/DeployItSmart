@@ -6,7 +6,9 @@
             "command": "act",
             "type": "shell",
             "args": [
-                "push",
+                "workflow_dispatch",
+                "-W",
+                ".github/workflows/build.yml",
                 "--artifact-server-path",
                 ".\\.bin\\.artifacts",
                 "-e",

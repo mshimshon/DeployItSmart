@@ -327,7 +327,7 @@ public class GenerateChangeLogRunner : IRunner
 
         var versions = await _currentReleaseVersion.GetVersions();
         var tagSince = CommitSearchConfig.SinceTag;
-        var IsFirstRelease = CommitSearchConfig.IsFirstRelease;
+        var IsFirstRelease = VersionRunnerConfig.IsFirstRelease;
         if (tagSince != default)
             currentVersion = versions.FirstOrDefault(p => p.ToString() == tagSince);
 
@@ -410,15 +410,11 @@ public class GenerateChangeLogRunner : IRunner
                     documentStart[item.Key].Add(new MdParagraph(ToolConfig.EmptyLogMessage));
                 else
                     documentStart[item.Key].AddRange(item.Value);
-                //ROOT Handle
-                if (item.Key == "_" && ChangeLogConfig.FixNonLinearMaster)
-                {
-
-                }
                 MdDocument doc = new MdDocument(documentStart[item.Key]);
                 string filename = item.Key;
                 if (filename != "_") filename = Path.GetFileNameWithoutExtension(item.Key);
                 string outputPath = Path.Combine(ChangeLogConfig.OutputLogs, $"{filename}.{nextVersion}.md");
+                System.Console.WriteLine($"Writing '{outputPath}'");
                 Terminal.WriteLine(doc.ToString());
                 doc.Save(outputPath);
             }
@@ -435,6 +431,7 @@ public class GenerateChangeLogRunner : IRunner
                 blocks.AddRange(projectSplitBlocks["_"]);
             MdDocument doc = new MdDocument(blocks);
             string outputPath = Path.Combine(ChangeLogConfig.OutputLogs, $"_.{nextVersion}.md");
+            System.Console.WriteLine($"Writing '{outputPath}'");
             Terminal.WriteLine(doc.ToString());
             doc.Save(outputPath);
         }

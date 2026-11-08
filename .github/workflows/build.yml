@@ -34,6 +34,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+
       - name: Building DeployItSmart ;)
         run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
 
@@ -45,8 +46,8 @@ jobs:
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
           if [ "${{ github.ref_name }}" = "main-dev" ]; then
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput --previewMark "rc"
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode --previewMark "rc"
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput --previewMark "rc" --isFirstRelease
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode --previewMark "rc" --isFirstRelease
           fi
 
 
@@ -54,16 +55,26 @@ jobs:
         run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name  }}
+          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
 
       - name: Generate Release Notes
         shell: bash
-        run: dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+        run: |
+
+          if [ "${{ github.ref_name }}" = "main-dev" ]; then
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode --previewMark "rc"
+          else
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+          fi
 
       - name: Validating Output
         shell: bash
         run: bash -e .github/workflows/composition/validate_release_outputs.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name }}
+          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
 
       - name: Save Variables for Deploy
         shell: bash

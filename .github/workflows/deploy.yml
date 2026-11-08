@@ -45,6 +45,7 @@ jobs:
         id: release_version
         shell: bash
         run: |
+          echo "Trigger Branch: ${{ steps.version_control.outputs.trigger_branch }}"
           if [ "${{ steps.version_control.outputs.trigger_branch }}" = "main-dev" ]; then
               echo "This is a Preview Release";
               echo "Next Natural to version: ${{ steps.version_control.outputs.version_next }}"
@@ -59,14 +60,21 @@ jobs:
               echo "release_version=${{ steps.version_control.outputs.version_next }}" >> "$GITHUB_OUTPUT"
           fi
 
-
-
       - name: NuGet login (OIDC → temp API key)
         if: ${{ !env.ACT }}
         uses: NuGet/login@v1
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
+
+      - name: Upload Preview Tag
+        if: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
+        shell: bash
+        run: |
+          git fetch origin main-dev
+          TAG_NAME="${{ steps.release_version.outputs.release_version }}"
+          git tag -a "$TAG_NAME" -m "Preview release: $TAG_NAME" origin/main-dev
+          git push origin "$TAG_NAME"
 
       - name: Create GitHub Release
         if: ${{ !env.ACT }}
@@ -75,6 +83,7 @@ jobs:
           tag_name: v${{ steps.release_version.outputs.release_version }}
           body_path: "/tmp/artifacts/output/_.${{ steps.release_version.outputs.release_version }}.md"
           fail_on_unmatched_files: true
+          prerelease: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
           files: |
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz

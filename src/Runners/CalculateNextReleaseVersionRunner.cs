@@ -42,7 +42,7 @@ public class CalculateNextReleaseVersionRunner : IRunner
     {
         var latestStable = await _currentReleaseVersion.GetCurrentTag();
         var latestPreview = await _getCurrentPreReleaseVersion.GetCurrentPreviewTag();
-        var IsFirstRelease = CommitSearchConfig.IsFirstRelease;
+        var IsFirstRelease = VersionRunnerConfig.IsFirstRelease;
         var IsAllowingUnsafe = CommitSearchConfig.AllowUnsafeVersionCalculation;
         var tagSince = CommitSearchConfig.SinceTag;
         if (tagSince != default && IsAllowingUnsafe)

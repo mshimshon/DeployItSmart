@@ -1,5 +1,5 @@
 {
-    "workflow_run": {
+    "workflow_dispatch": {
         "id": 1,
         "conclusion": "success",
         "head_branch": "main",
