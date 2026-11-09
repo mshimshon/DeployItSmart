@@ -57,13 +57,12 @@ public class GitSmart : IGitSmart, IDisposable
             bool confirmTargetInHistory = _repository.Commits.Any(p => p.Id.Sha == targetSha);
             if (!confirmTargetInHistory && _masterBranch == _currentBranch)
                 throw new Exception($"Tag: {sinceTag} is not in the history of {_repository.Head.CanonicalName} this is most likely due to misconfiguration of repository should enable rebase merge for PR.");
-            else if (!confirmTargetInHistory && _masterBranch == _devBranch)
+            else if (!confirmTargetInHistory && _currentBranch == _devBranch)
             {
                 var masterHistory = _repository.Branches[$"origin/{_masterBranch}"];
                 bool foundTag = false;
-                bool foundMatch = false;
                 foreach (var masterCommit in masterHistory.Commits)
-                    if (foundMatch)
+                    if (confirmTargetInHistory)
                         break;
                     else if (!foundTag && targetSha == masterCommit.Id.Sha)
                         foundTag = true;
@@ -71,15 +70,16 @@ public class GitSmart : IGitSmart, IDisposable
                         foreach (var devCommit in _repository.Commits)
                             if (devCommit.Id.Sha == masterCommit.Id.Sha)
                             {
-                                foundMatch = true;
+                                confirmTargetInHistory = true;
                                 targetSha = devCommit.Id.Sha; // Found most recent common match
 
                                 break;
                             }
             }
-            else if (!confirmTargetInHistory && _currentBranch != _masterBranch && _currentBranch != _devBranch)
+            else if (!confirmTargetInHistory && (_currentBranch != _masterBranch && _currentBranch != _devBranch))
+                throw new Exception($"Tag: {sinceTag} is not in the history of {_repository.Head.CanonicalName}.");
+            if (!confirmTargetInHistory)
                 throw new Exception($"Tag: {sinceTag} is not in the history of {_repository.Head.CanonicalName} this is most likely due to misconfiguration of repository should enable rebase merge for PR.");
-
         }
 
         List<CommitInfoStructure> targetedExtraction = [];
