@@ -218,7 +218,7 @@ However, you can use conditional deployments (such as GitHub Actions) to skip re
 
 Preview releases are entirely optional. Teams that do not require preview, they can release stable versions directly through their standard promotion process PR to main branch which at very least increase patch.
 
-The preview versioning model uses a **promotion branch strategy** combined short lived feature branch to merge in.
+The preview versioning model uses a **promotion branch strategy** combined short lived feature branch to merge in `main-dev` (default).
 
 ### Branch Structure
 
@@ -391,70 +391,8 @@ I will however try to make it auto cleaned if that occurs but for now make sure 
 ```
 
 
-## Workflow Example
-
-```yaml
-name: Build
-
-on:
-  push:
-    branches:
-      - main
-
-  workflow_dispatch:
-
-
-jobs:
-
-  build:
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      id-token: write
-      contents: read
-
-    if: ${{ (!contains(github.event.head_commit.message, 'skipci~') && !contains(github.event.workflow_run.head_commit.message, 'skipci~')) }}
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # 👈 IMPORTANT TO FORCE CHECKOUT WITH FULL HISTORY
-
-      - name: Setup .NET 10 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Building DeployItSmart ;)
-        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
-
-
-      - name: Get Last Version Tag
-        id: version_control
-        shell: bash
-        run: |
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
-
-      - name: Building Shipping Release DeployItSmart ;)
-        run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
-        env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
-
-      - name: Generate Release Notes
-        shell: bash
-        run: dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
-
-      - name: Validating Output
-        shell: bash
-        run: bash -e .github/workflows/composition/validate_release_outputs.sh
-        env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
-
-
-```
+## Setting Examples
+check folder examples in the repository.
 
 
 ## Useful
