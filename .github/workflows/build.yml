@@ -46,8 +46,8 @@ jobs:
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
           if [ "${{ github.ref_name }}" = "main-dev" ]; then
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput --previewMark "rc" --isFirstRelease
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode --previewMark "rc" --isFirstRelease
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode
           fi
 
 
@@ -63,7 +63,7 @@ jobs:
         run: |
 
           if [ "${{ github.ref_name }}" = "main-dev" ]; then
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode --previewMark "rc"
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode
           else
             dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
           fi

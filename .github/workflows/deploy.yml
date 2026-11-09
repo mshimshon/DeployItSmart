@@ -67,15 +67,6 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
-      - name: Upload Preview Tag
-        if: ${{ steps.version_control.outputs.trigger_branch == 'main-dev' }}
-        shell: bash
-        run: |
-          git fetch origin main-dev
-          TAG_NAME="${{ steps.release_version.outputs.release_version }}"
-          git tag -a "$TAG_NAME" -m "Preview release: $TAG_NAME" origin/main-dev
-          git push origin "$TAG_NAME"
-
       - name: Create GitHub Release
         if: ${{ !env.ACT }}
         uses: softprops/action-gh-release@v2

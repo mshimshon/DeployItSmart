@@ -8,6 +8,7 @@ namespace DeployItSmart.Engine.Configuration;
 
 public static class ConfigurationRunner
 {
+
     private static ToolConf _toolConfiguration = default!;
     private static Dictionary<Type, object> _configuration = new();
     private static JsonSerializerOptions _jsonSerializerOption = new JsonSerializerOptions()

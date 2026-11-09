@@ -44,6 +44,7 @@ public class CalculateNextReleaseVersionRunner : IRunner
         var latestPreview = await _getCurrentPreReleaseVersion.GetCurrentPreviewTag();
         var IsFirstRelease = VersionRunnerConfig.IsFirstRelease;
         var IsAllowingUnsafe = CommitSearchConfig.AllowUnsafeVersionCalculation;
+        var isPreview = VersionRunnerConfig.IsPreviewMode;
         var tagSince = CommitSearchConfig.SinceTag;
         if (tagSince != default && IsAllowingUnsafe)
             latestStable = NuGetVersion.Parse(tagSince);
@@ -52,7 +53,22 @@ public class CalculateNextReleaseVersionRunner : IRunner
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
         if (latestStable == default)
             return NuGetVersion.Parse(ToolConfig.InitialVersion);
-        var commits = await _getTrackCommitMessages.GetHistory(latestStable.ToString());
+        List<TrackedCommitMessageStructure> commits = new();
+        try
+        {
+            commits = await _getTrackCommitMessages.GetHistory(latestStable.ToString());
+        }
+        catch (System.Exception)
+        {
+        }
+
+        NuGetVersion? previewCommitToRelease = default;
+        if (!IsFirstRelease && !isPreview)
+        {
+            var previewVersions = await _getCurrentPreReleaseVersion.GetPreviewVersions();
+            previewCommitToRelease = previewVersions.LastOrDefault(p => ServiceAccessor.Use<IGitSmart>().GetTagCommitId(p.ToString()) != default);
+        }
+
         int major = 0, minor = 0;
         if (HasAnyBreakingChanges(commits)) major = 1;
         else
@@ -66,32 +82,36 @@ public class CalculateNextReleaseVersionRunner : IRunner
             major = major + earnedMajors;
         }
 
-
-
+        bool hasSignificantChanges = minor > 0 || major > 0;
         NuGetVersion? nextVersion;
-        if (major > 0)
-            nextVersion = new(latestStable.Major + 1, 0, 0);
-        else if (minor > 0)
-            nextVersion = new(latestStable.Major, latestStable.Minor + 1, 0);
-        else
-            nextVersion = new(latestStable.Major, latestStable.Minor, latestStable.Patch + 1);
 
-        /*
-            If this hit it mean someone change the git history on the main tracking branch effectively destroyed the version calculation
-        */
-        if (latestPreview != default && latestPreview > nextVersion)
-            throw new Exception($"Last Preview is greater than next logical release this should be impossible unless the git tag history got changed manually cannot proceed next stable = {nextVersion} vs current preview = {latestPreview}");
-        if (VersionRunnerConfig.IsPreviewMode && (latestPreview == default || latestPreview < latestStable))
+        if (previewCommitToRelease == default || latestStable > previewCommitToRelease)
         {
-            var releaseLabels = new[] { VersionRunnerConfig.PreviewMark, "1" };
-            nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, releaseLabels!, null);
+            if (major > 0)
+                nextVersion = new(latestStable.Major + 1, 0, 0);
+            else if (minor > 0)
+                nextVersion = new(latestStable.Major, latestStable.Minor + 1, 0);
+            else
+                nextVersion = new(latestStable.Major, isPreview ? latestStable.Minor + 1 : latestStable.Minor, isPreview ? 0 : latestStable.Patch + 1);
+        }
+        else
+        {
+            nextVersion = new(previewCommitToRelease.Major, previewCommitToRelease.Minor, previewCommitToRelease.Patch);
+        }
+
+
+        if (isPreview && (latestPreview == default || latestPreview < latestStable || latestPreview < nextVersion))
+        {
+            var releaseLabels = new[] { ToolConfig.PreviewMark, "1" };
+            nextVersion = new(nextVersion.Major, nextVersion.Minor, 0, releaseLabels!, null);
 
         }
-        else if (VersionRunnerConfig.IsPreviewMode && latestPreview != default && latestPreview >= latestStable)
+        else if (isPreview && latestPreview != default && latestPreview >= latestStable)
         {
             nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, latestPreview.ReleaseLabels, null);
             nextVersion = nextVersion.IncrementPrelease();
         }
+
 
         return nextVersion;
     }

@@ -341,7 +341,7 @@ public class GenerateChangeLogRunner : IRunner
                 currentVersion = currentPrerelease;
 
         var commits = await _getTrackCommitMessages.GetHistory(currentVersion!.ToString());
-        // Get Structure commit and transform to reguler commit structure one message per commit per type then process
+        // Get Structure commit and transform to reguler commit structure one message per commit per type then process 0732775004
         Dictionary<TrackerReleaseType, List<CommitInfoStructure>> newCommits = new()
         {
             [TrackerReleaseType.SecurityBreaking] = new List<CommitInfoStructure>(),
