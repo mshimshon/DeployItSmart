@@ -4,17 +4,17 @@ namespace DeployItSmart.Engine.Utils;
 
 public static class GithubWriter
 {
-    public static void GithubOutput(string key, string value)
-        => GithubOutput(new Dictionary<string, string>() { { key, value } });
+    public static void GithubOutput(string key, string value, bool allowDefault)
+        => GithubOutput(new Dictionary<string, string>() { { key, value } }, allowDefault);
 
-    public static void GithubOutput(Dictionary<string, string> addOutput)
+    public static void GithubOutput(Dictionary<string, string> addOutput, bool allowDefault)
     {
         string? githubOutput = Environment.GetEnvironmentVariable("GITHUB_OUTPUT");
         if (!string.IsNullOrEmpty(githubOutput) && File.Exists(githubOutput))
         {
             Terminal.WriteLine(githubOutput);
             List<string> artifacts = new();
-            Dictionary<string, string> outputs = new();
+            Dictionary<string, string?> outputs = new();
             foreach (var item in File.ReadAllLines(githubOutput))
             {
                 string[] line = item.Split('=');
@@ -31,7 +31,7 @@ public static class GithubWriter
                 Terminal.WriteLine($"{item.Key} is set in output.");
 
             }
-            artifacts.AddRange(outputs.Select(p => $"{p.Key}={p.Value}"));
+            artifacts.AddRange(outputs.Select(p => $"{p.Key}={p.Value ?? ""}"));
             File.WriteAllLines(githubOutput, artifacts);
         }
         else

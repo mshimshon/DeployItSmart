@@ -19,12 +19,18 @@ public class GitSmart : IGitSmart, IDisposable
         SortBy = CommitSortStrategies.Reverse
     };
 
+    public bool IsMainBranch { get; }
+
+    public bool IsDevBranch { get; }
+
     public GitSmart()
     {
         _repository = new Repository(Environment.CurrentDirectory);
         _currentBranch = _repository.Head.FriendlyName;
         _masterBranch = _toolConf.MasterBranch;
         _devBranch = _toolConf.DevelopBranch;
+        IsMainBranch = _currentBranch == _masterBranch;
+        IsDevBranch = _currentBranch == _devBranch;
         FetchRemoteTags();
 
     }

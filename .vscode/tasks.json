@@ -2,13 +2,13 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Act Workflow Build",
+            "label": "Act Workflow Hotfix Build",
             "command": "act",
             "type": "shell",
             "args": [
                 "workflow_dispatch",
                 "-W",
-                ".github/workflows/build.yml",
+                ".github/workflows/build_hotfix_development.yml",
                 "--artifact-server-path",
                 ".\\.bin\\.artifacts",
                 "-e",
@@ -31,7 +31,7 @@
             ],
             "problemMatcher": "$msCompile",
             "dependsOn": [
-                "Act Workflow Build",
+                "Act Workflow Hotfix Build",
             ],
         },
         {

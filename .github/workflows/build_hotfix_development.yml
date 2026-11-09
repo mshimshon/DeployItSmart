@@ -5,11 +5,13 @@ on:
     types: [closed]
     branches:
       - main
+  workflow_dispatch: # Necessary for the explicit 'act workflow_dispatch' command
 
 jobs:
-  create-and-merge-dev-pr:
+  CreateHotfixDevelopment:
     if: |
       github.event.pull_request.merged == true && github.event.pull_request.head.ref != 'main-dev'
+
 
     runs-on: ubuntu-latest
     permissions:
@@ -21,6 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create and Auto-Merge PR into main-dev
+        if: ${{ !env.ACT }}
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -45,3 +48,75 @@ jobs:
           else
             echo "⚠️ Auto-merge failed. The PR remains open and branch '$SOURCE_BRANCH' is active for manual conflict resolution."
           fi
+  PatchStableRelease:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      id-token: write
+      contents: read
+    if: >-
+      !contains(github.event.head_commit.message, 'skipci~') &&
+      !contains(github.event.workflow_run.head_commit.message, 'skipci~')
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+
+      - name: Building DeployItSmart ;)
+        shell: bash
+        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
+
+
+      - name: Get Last Version Tag
+        id: version_control
+        shell: bash
+        run: |
+          APP_ARGS=()
+          if [ "${{ github.ref_name }}" != "main-dev" ]; then
+            APP_ARGS+=(--patchStabelOnly)
+          fi
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput "${APP_ARGS[@]}"
+
+      - name: Building Shipping Release DeployItSmart ;)
+        run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name  }}
+          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
+
+      - name: Generate Release Notes
+        shell: bash
+        run: |
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+
+      - name: Validating Output
+        shell: bash
+        run: bash -e .github/workflows/composition/validate_release_outputs.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name }}
+          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
+
+      - name: Save Variables for Deploy
+        shell: bash
+        run: |
+          mkdir -p /tmp/artifacts/output
+          echo "version_next=${{ steps.version_control.outputs.version_next }}" >> /tmp/artifacts/output/build.env
+          echo "version_current=${{ steps.version_control.outputs.version_current }}" >> /tmp/artifacts/output/build.env
+          echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
+          ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"
+
+      - name: Upload Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets # Label
+          path: /tmp/artifacts/output/

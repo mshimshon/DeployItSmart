@@ -3,6 +3,7 @@
 # -u: Treat unset variables as an error
 # -o pipefail: Prevent errors in a pipeline from being masked
 set -euo pipefail
+
 VERSION_NEXT="${VERSION_NEXT:-}"
 VERSION_NEXT_PREVIEW="${VERSION_NEXT_PREVIEW:-}"
 BRANCH="${BRANCH:-}"

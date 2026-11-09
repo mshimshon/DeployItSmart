@@ -37,7 +37,11 @@ public class GenerateChangeLogRunner : IRunner
         _messageTool = new MessageSearchTool();
         _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
         _replacePattern = ToolConfig.TagMarkdown.ToDictionary(p => p.Key, p => p.Value);
+        _isDevBranch = ServiceAccessor.Use<IGitSmart>().IsDevBranch;
+        _isMasterBranch = ServiceAccessor.Use<IGitSmart>().IsMainBranch;
     }
+    private readonly bool _isDevBranch;
+    private readonly bool _isMasterBranch;
     public static IRunner Create() => new GenerateChangeLogRunner();
     public static string GetCommandName() => nameof(GenerateChangeLogRunner);
     public async Task RunAsync()
@@ -331,13 +335,13 @@ public class GenerateChangeLogRunner : IRunner
         if (tagSince != default)
             currentVersion = versions.FirstOrDefault(p => p.ToString() == tagSince);
 
-
+        bool isPreview = VersionRunnerConfig.IsPreviewMode || _isDevBranch;
         if (currentVersion == default && tagSince != default)
             throw new Exception($"cannot find specific tag since {tagSince}");
         else if (currentVersion == default && !IsFirstRelease)
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
         else if (currentVersion != default)
-            if (VersionRunnerConfig.IsPreviewMode && currentPrerelease != default && currentPrerelease > currentVersion)
+            if (isPreview && currentPrerelease != default && currentPrerelease > currentVersion)
                 currentVersion = currentPrerelease;
 
         var commits = await _getTrackCommitMessages.GetHistory(currentVersion!.ToString());

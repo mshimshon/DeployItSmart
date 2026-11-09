@@ -36,6 +36,7 @@ jobs:
 
 
       - name: Building DeployItSmart ;)
+        shell: bash
         run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
 
 
@@ -43,13 +44,13 @@ jobs:
         id: version_control
         shell: bash
         run: |
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
-          if [ "${{ github.ref_name }}" = "main-dev" ]; then
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode
+          APP_ARGS=()
+          if [ "${{ github.ref_name }}" != "main-dev" ]; then
+            APP_ARGS+=(--patchStabelOnly)
           fi
-
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput "${APP_ARGS[@]}"
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput "${APP_ARGS[@]}"
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput "${APP_ARGS[@]}"
 
       - name: Building Shipping Release DeployItSmart ;)
         run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh

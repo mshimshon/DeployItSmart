@@ -46,11 +46,11 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
         var current = await GetCurrentPreviewTag();
         if (VersionRunnerConfig.GithubOutput)
             if (current != default)
-                GithubOutput("version_current_preview", current.ToString());
+                GithubOutput("version_current_preview", current.ToString(), VersionRunnerConfig.GithubOutputNullable);
             else if (VersionRunnerConfig.IsFirstRelease)
-                GithubOutput("version_current_preview", $"0.0.0-{ToolConfig.PreviewMark}.1");
+                GithubOutput("version_current_preview", $"0.0.0-{ToolConfig.PreviewMark}.1", VersionRunnerConfig.GithubOutputNullable);
             else
-                throw new Exception("Current Version Null Required due to --ghOutput and no --isFirstRelease");
+                throw new Exception("Current Version Null Required due to --isFirstRelease");
         Console.WriteLine(current?.ToString() ?? "");
     }
     private readonly string _regexPreviewSemVer = default!;

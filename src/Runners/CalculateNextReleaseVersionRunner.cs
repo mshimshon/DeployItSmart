@@ -25,16 +25,19 @@ public class CalculateNextReleaseVersionRunner : IRunner
         _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
         _getTrackCommitMessages = new GetTrackCommitMessagesRunner();
         _messageTool = new MessageSearchTool();
+        _isDevBranch = ServiceAccessor.Use<IGitSmart>().IsDevBranch;
+        _isMasterBranch = ServiceAccessor.Use<IGitSmart>().IsMainBranch;
     }
-
+    private readonly bool _isDevBranch;
+    private readonly bool _isMasterBranch;
     public async Task RunAsync()
     {
         var version = await GetNextVersion();
         if (VersionRunnerConfig.GithubOutput)
             if (VersionRunnerConfig.IsPreviewMode)
-                GithubOutput("version_next_preview", version.ToString());
+                GithubOutput("version_next_preview", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
             else
-                GithubOutput("version_next", version.ToString());
+                GithubOutput("version_next", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
         Console.WriteLine(version);
     }
 
@@ -44,7 +47,8 @@ public class CalculateNextReleaseVersionRunner : IRunner
         var latestPreview = await _getCurrentPreReleaseVersion.GetCurrentPreviewTag();
         var IsFirstRelease = VersionRunnerConfig.IsFirstRelease;
         var IsAllowingUnsafe = CommitSearchConfig.AllowUnsafeVersionCalculation;
-        var isPreview = VersionRunnerConfig.IsPreviewMode;
+        var isPreview = VersionRunnerConfig.IsPreviewMode || _isDevBranch;
+        var isPatchOnly = VersionRunnerConfig.PatchStableOnly;
         var tagSince = CommitSearchConfig.SinceTag;
         if (tagSince != default && IsAllowingUnsafe)
             latestStable = NuGetVersion.Parse(tagSince);
@@ -53,6 +57,10 @@ public class CalculateNextReleaseVersionRunner : IRunner
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
         if (latestStable == default)
             return NuGetVersion.Parse(ToolConfig.InitialVersion);
+
+        if (isPatchOnly && !IsFirstRelease)
+            return new(latestStable.Major, latestStable.Minor, latestStable.Patch + 1);
+
         List<TrackedCommitMessageStructure> commits = new();
         try
         {
