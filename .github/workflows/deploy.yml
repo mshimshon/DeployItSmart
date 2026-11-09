@@ -79,7 +79,6 @@ jobs:
             /tmp/artifacts/output/deployitsmart_win_x64.tar.gz
             /tmp/artifacts/output/deployitsmart_linux_x64.tar.gz
             /tmp/artifacts/output/DeployItSmart.${{ steps.release_version.outputs.release_version }}.nupkg
-            /tmp/artifacts/output/_.${{ steps.release_version.outputs.release_version }}.md
 
       - name: Push all NuGet packages with retry
         if: ${{ !env.ACT }}
