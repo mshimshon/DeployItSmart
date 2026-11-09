@@ -6,13 +6,13 @@
             "command": "act",
             "type": "shell",
             "args": [
-                "workflow_dispatch",
+                "pull_request",
                 "-W",
-                ".github/workflows/build_hotfix_development.yml",
+                ".github/workflows/gh_pr_main_preview.yml",
                 "--artifact-server-path",
                 ".\\.bin\\.artifacts",
                 "-e",
-                ".github/workflows/event.json",
+                ".github/workflows/event-dev.json",
             ],
             "problemMatcher": "$msCompile"
         },

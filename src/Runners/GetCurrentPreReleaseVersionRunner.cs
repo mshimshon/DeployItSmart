@@ -46,9 +46,18 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
         var current = await GetCurrentPreviewTag();
         if (VersionRunnerConfig.GithubOutput)
             if (current != default)
+            {
                 GithubOutput("version_current_preview", current.ToString(), VersionRunnerConfig.GithubOutputNullable);
+                GithubOutput("version_current_preview_v", current.Version.ToString(3), VersionRunnerConfig.GithubOutputNullable);
+                GithubOutput("version_current_preview_s", current.Release, VersionRunnerConfig.GithubOutputNullable);
+            }
             else if (VersionRunnerConfig.IsFirstRelease)
-                GithubOutput("version_current_preview", $"0.0.0-{ToolConfig.PreviewMark}.1", VersionRunnerConfig.GithubOutputNullable);
+            {
+                current = NuGetVersion.Parse("0.0.1-{ToolConfig.PreviewMark}.1");
+                GithubOutput("version_current_preview", current.ToString(), VersionRunnerConfig.GithubOutputNullable);
+                GithubOutput("version_current_preview_v", current.Version.ToString(3), VersionRunnerConfig.GithubOutputNullable);
+                GithubOutput("version_current_preview_s", current.Release, VersionRunnerConfig.GithubOutputNullable);
+            }
             else
                 throw new Exception("Current Version Null Required due to --isFirstRelease");
         Console.WriteLine(current?.ToString() ?? "");

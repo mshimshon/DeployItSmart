@@ -1,25 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION_NEXT="${VERSION_NEXT:-}"
-VERSION_NEXT_PREVIEW="${VERSION_NEXT_PREVIEW:-}"
-BRANCH="${BRANCH:-}"
-
-if [ "$BRANCH" = "main-dev" ]; then
-  if [ -z "$VERSION_NEXT_PREVIEW" ]; then
-    echo "::error::main-dev build but VERSION_NEXT_PREVIEW is empty" >&2
-    exit 1
-  fi
-  VERSION="$VERSION_NEXT_PREVIEW"
-else
-  if [ -z "$VERSION_NEXT" ]; then
-    echo "::error::VERSION_NEXT is empty" >&2
-    exit 1
-  fi
-  VERSION="$VERSION_NEXT"
+VERSION="${VERSION_NEXT:-}"
+VERSION_NS="${VERSION_NOSUFFIX:-}"
+if [ -z "$VERSION_NOSUFFIX" ]; then
+    $VERSION_NS = $VERSION # IF NOT PREVIEW SAY THE VERSION NO SUFFIX, IF PREVIEW YOU GET A x.x.x HERE
 fi
+MAJOR="${VERSION_NS%%.*}"
+MAJOR_ZERO_ZERO="${MAJOR}.0.0" # FOR .NET PROJECT ASSEMBLY VERSION.
 
+BRANCH="${BRANCH:-}"
 echo "Releasing version: $VERSION"
+
 # Define array of expected filenames
 ALLOWED_FILES=(
   "_.$VERSION.md" # Confirm the changelog does exist.

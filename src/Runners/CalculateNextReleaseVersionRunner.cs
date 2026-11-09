@@ -35,7 +35,11 @@ public class CalculateNextReleaseVersionRunner : IRunner
         var version = await GetNextVersion();
         if (VersionRunnerConfig.GithubOutput)
             if (VersionRunnerConfig.IsPreviewMode)
+            {
                 GithubOutput("version_next_preview", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
+                GithubOutput("version_next_preview_v", version.Version.ToString(3), VersionRunnerConfig.GithubOutputNullable);
+                GithubOutput("version_next_preview_s", version.Release, VersionRunnerConfig.GithubOutputNullable);
+            }
             else
                 GithubOutput("version_next", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
         Console.WriteLine(version);
@@ -107,8 +111,10 @@ public class CalculateNextReleaseVersionRunner : IRunner
             nextVersion = new(previewCommitToRelease.Major, previewCommitToRelease.Minor, previewCommitToRelease.Patch);
         }
 
-
-        if (isPreview && (latestPreview == default || latestPreview < latestStable || latestPreview < nextVersion))
+        bool isPreviewBehindStable = latestPreview != default && latestPreview < latestStable;
+        bool isPreviewBehindNext = latestPreview != default && latestPreview < latestStable;
+        bool requiresBrandNewPreview = isPreviewBehindStable || isPreviewBehindNext;
+        if (isPreview && requiresBrandNewPreview)
         {
             var releaseLabels = new[] { ToolConfig.PreviewMark, "1" };
             nextVersion = new(nextVersion.Major, nextVersion.Minor, 0, releaseLabels!, null);

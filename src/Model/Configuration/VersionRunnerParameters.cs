@@ -13,7 +13,7 @@ public sealed record class VersionRunnerParameters : BaseConfigurator
     {
         IsPreviewMode = StartupParams.CheckOptionalFlag("--previewMode");
         GithubOutput = StartupParams.CheckOptionalFlag("--ghOutput");
-        PatchStableOnly = StartupParams.CheckOptionalFlag("--patchStabelOnly");
+        PatchStableOnly = StartupParams.CheckOptionalFlag("--patchStableOnly");
         IsFirstRelease = StartupParams.CheckOptionalFlag("--isFirstRelease");
     }
 }

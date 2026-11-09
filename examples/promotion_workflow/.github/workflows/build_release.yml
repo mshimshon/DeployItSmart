@@ -1,4 +1,4 @@
-name: Auto-PR Hotfix to Development
+name: PR_MAIN_RELEASE
 
 on:
   pull_request:
@@ -9,10 +9,7 @@ on:
 
 jobs:
   CreateHotfixDevelopment:
-    if: |
-      github.event.pull_request.merged == true && github.event.pull_request.head.ref != 'main-dev'
-
-
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref != 'main-dev'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -48,16 +45,15 @@ jobs:
           else
             echo "⚠️ Auto-merge failed. The PR remains open and branch '$SOURCE_BRANCH' is active for manual conflict resolution."
           fi
-  PatchStableRelease:
+
+  PatchMainStable:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       id-token: write
       contents: read
-    if: >-
-      !contains(github.event.head_commit.message, 'skipci~') &&
-      !contains(github.event.workflow_run.head_commit.message, 'skipci~')
+    if: github.event.pull_request.merged == true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -69,42 +65,48 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-
-      - name: Building DeployItSmart ;)
+      - name: Installing DepItSmart!
         shell: bash
-        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
-
+        run: |
+          dotnet tool install -g DeployItSmart
+          which depitsmart || true
+          echo "/root/.dotnet/tools" >> $GITHUB_PATH
+          mkdir -p /tmp/artifacts/output
 
       - name: Get Last Version Tag
         id: version_control
         shell: bash
         run: |
-          APP_ARGS=()
-          if [ "${{ github.ref_name }}" != "main-dev" ]; then
-            APP_ARGS+=(--patchStabelOnly)
+          depitsmart GetCurrentReleaseVersionRunner --ghOutput
+          if [ "$HEAD_REF" = "main-dev" ]; then
+            echo "Releasing Next Stable from Main Development"
+            depitsmart CalculateNextReleaseVersionRunner --ghOutput
+          else
+            echo "The incoming branch is $HEAD_REF."
+            depitsmart CalculateNextReleaseVersionRunner --ghOutput --patchStableOnly
           fi
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
-          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput "${APP_ARGS[@]}"
 
       - name: Building Shipping Release DeployItSmart ;)
-        run: bash -e .github/workflows/composition/publish_deployitsmart_final.sh
+        run: bash -e .github/workflows/composition/compile_output.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
           BRANCH:  ${{ github.ref_name  }}
-          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
 
       - name: Generate Release Notes
         shell: bash
         run: |
-            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+          if [ "$HEAD_REF" = "main-dev" ]; then
+            depitsmart GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+          else
+            depitsmart GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --patchStableOnly
+          fi
 
       - name: Validating Output
         shell: bash
-        run: bash -e .github/workflows/composition/validate_release_outputs.sh
+        run: bash -e .github/workflows/composition/validate_output.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
           BRANCH:  ${{ github.ref_name }}
-          VERSION_NEXT_PREVIEW: ${{steps.version_control.outputs.version_next_preview}}
 
       - name: Save Variables for Deploy
         shell: bash
