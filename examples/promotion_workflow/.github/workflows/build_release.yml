@@ -1,4 +1,4 @@
-name: PR_MAIN_RELEASE
+name: Stable
 
 on:
   pull_request:

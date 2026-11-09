@@ -2,7 +2,7 @@ name: Release
 
 on:
   workflow_run:
-    workflows: ["PR_MAIN_DEV_RELEASE", "PR_MAIN_RELEASE"] # 👈 Put the EXACT name of your build workflow here
+    workflows: ["Preview", "Stable"] # 👈 Put the EXACT name of your build workflow here
     types:
       - completed
   workflow_dispatch: # Keeps your manual trigger working
