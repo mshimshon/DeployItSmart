@@ -20,21 +20,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create and Auto-Merge PR into main.dev
+      - name: Create and Auto-Merge PR into main-dev
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          echo "Creating a new PR targeting 'main.dev'..."
+          echo "Creating a new PR targeting 'main-dev'..."
 
           # 1. Create the PR and capture the URL
           PR_URL=$(gh pr create \
-            --base main.dev \
+            --base main-dev \
             --head "$SOURCE_BRANCH" \
             --title "Sync: $PR_TITLE (from PR #$PR_NUMBER)" \
-            --body "This PR was automatically created to sync '$SOURCE_BRANCH' into main.dev. Attempting auto-merge...")
+            --body "This PR was automatically created to sync '$SOURCE_BRANCH' into main-dev. Attempting auto-merge...")
 
           echo "PR created successfully: $PR_URL"
 
