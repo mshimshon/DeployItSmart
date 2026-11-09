@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["Build"] # 👈 Put the EXACT name of your build workflow here
+    types:
+      - completed
+  workflow_dispatch: # Keeps your manual trigger working
+
+concurrency:
+  group: deploy-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    environment:
+      name: production
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      id-token: write
+      contents: write
+
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Download Build Output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+          path: /tmp/artifacts/output # where ever you saved the output.
+          run-id: ${{ !env.ACT && github.event.workflow_run.id || '' }} # Empty if running ACT
+          github-token: ${{ !env.ACT && secrets.GITHUB_TOKEN || '' }} # Empty if running ACT
+
+      # Load the export variables
+      - name: Load Variables into Outputs
+        id: version_control
+        shell: bash
+        run: |
+          ls -laR /tmp/artifacts || echo "no /tmp/artifacts"
+          grep -E '^[A-Za-z_][A-Za-z0-9_]*=' /tmp/artifacts/output/build.env | tr -d '\r' >> "$GITHUB_OUTPUT"
+
+      # Simple Confirmation
+      - name: Use the Passed Versions
+        shell: bash
+        run: |
+              echo "Next Actual to version: ${{ steps.version_control.outputs.version_next }}"
+              echo "The current version: ${{ steps.version_control.outputs.version_current }}"
+
+      # Create Github Release.
+      - name: Create GitHub Release
+        if: ${{ !env.ACT }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version_control.outputs.version_next }}
+          body_path: "/tmp/artifacts/output/_.${{ steps.version_control.outputs.version_next }}.md" # Set changelog as release body
+          fail_on_unmatched_files: true
+          files: |
+            /tmp/artifacts/output/*.nupkg
