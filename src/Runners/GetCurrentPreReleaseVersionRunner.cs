@@ -38,7 +38,7 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
     {
         _getCommitInfoSince = new GetCommitInfoSinceRunner();
         _messageTool = new MessageSearchTool();
-        _regexPreviewSemVer = @$"^v\d+\.\d+\.\d+-{VersionRunnerConfig.PreviewMark}\.\d+$";
+        _regexPreviewSemVer = @"^v\d+\.\d+\.\d+-[A-Za-z]+\.\d+$";
     }
 
     public async Task RunAsync()

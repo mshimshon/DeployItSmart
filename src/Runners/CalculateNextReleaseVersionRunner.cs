@@ -44,6 +44,7 @@ public class CalculateNextReleaseVersionRunner : IRunner
         var latestPreview = await _getCurrentPreReleaseVersion.GetCurrentPreviewTag();
         var IsFirstRelease = VersionRunnerConfig.IsFirstRelease;
         var IsAllowingUnsafe = CommitSearchConfig.AllowUnsafeVersionCalculation;
+        var isPreview = VersionRunnerConfig.IsPreviewMode;
         var tagSince = CommitSearchConfig.SinceTag;
         if (tagSince != default && IsAllowingUnsafe)
             latestStable = NuGetVersion.Parse(tagSince);
@@ -53,6 +54,14 @@ public class CalculateNextReleaseVersionRunner : IRunner
         if (latestStable == default)
             return NuGetVersion.Parse(ToolConfig.InitialVersion);
         var commits = await _getTrackCommitMessages.GetHistory(latestStable.ToString());
+
+        NuGetVersion? previewCommitToRelease = default;
+        if (!IsFirstRelease && !isPreview)
+        {
+            var previewVersions = await _getCurrentPreReleaseVersion.GetPreviewVersions();
+            previewCommitToRelease = previewVersions.LastOrDefault(p => ServiceAccessor.Use<IGitSmart>().GetTagCommitId(p.ToString()) != default);
+        }
+
         int major = 0, minor = 0;
         if (HasAnyBreakingChanges(commits)) major = 1;
         else
@@ -67,31 +76,34 @@ public class CalculateNextReleaseVersionRunner : IRunner
         }
 
 
-
         NuGetVersion? nextVersion;
-        if (major > 0)
-            nextVersion = new(latestStable.Major + 1, 0, 0);
-        else if (minor > 0)
-            nextVersion = new(latestStable.Major, latestStable.Minor + 1, 0);
+        if (previewCommitToRelease == default)
+        {
+            if (major > 0)
+                nextVersion = new(latestStable.Major + 1, 0, 0);
+            else if (minor > 0)
+                nextVersion = new(latestStable.Major, latestStable.Minor + 1, 0);
+            else
+                nextVersion = new(latestStable.Major, isPreview ? latestStable.Minor + 1 : latestStable.Minor, latestStable.Patch + 1);
+        }
         else
-            nextVersion = new(latestStable.Major, latestStable.Minor, latestStable.Patch + 1);
+        {
+            nextVersion = new(previewCommitToRelease.Major, previewCommitToRelease.Minor, previewCommitToRelease.Patch);
+        }
 
-        /*
-            If this hit it mean someone change the git history on the main tracking branch effectively destroyed the version calculation
-        */
-        if (latestPreview != default && latestPreview > nextVersion)
-            throw new Exception($"Last Preview is greater than next logical release this should be impossible unless the git tag history got changed manually cannot proceed next stable = {nextVersion} vs current preview = {latestPreview}");
-        if (VersionRunnerConfig.IsPreviewMode && (latestPreview == default || latestPreview < latestStable))
+
+        if (isPreview && (latestPreview == default || latestPreview < latestStable))
         {
             var releaseLabels = new[] { VersionRunnerConfig.PreviewMark, "1" };
-            nextVersion = new(nextVersion.Major, major > 0 ? 0 : minor > 0 ? nextVersion.Minor : nextVersion.Minor + 1, 0, releaseLabels!, null);
+            nextVersion = new(nextVersion.Major, nextVersion.Minor, 0, releaseLabels!, null);
 
         }
-        else if (VersionRunnerConfig.IsPreviewMode && latestPreview != default && latestPreview >= latestStable)
+        else if (isPreview && latestPreview != default && latestPreview >= latestStable)
         {
             nextVersion = new(nextVersion.Major, nextVersion.Minor, nextVersion.Patch, latestPreview.ReleaseLabels, null);
             nextVersion = nextVersion.IncrementPrelease();
         }
+
 
         return nextVersion;
     }

@@ -36,7 +36,11 @@ public class GitSmart : IGitSmart, IDisposable
         };
         Commands.Fetch(_repository, remote.Name, remote.FetchRefSpecs.Select(r => r.Specification), fetchOptions, null);
     }
-
+    public string? GetTagCommitId(string targetTag)
+    {
+        var tag = _repository.Tags.FirstOrDefault(p => p.FriendlyName.Equals($"v{targetTag}", StringComparison.OrdinalIgnoreCase));
+        return tag?.PeeledTarget.Sha;
+    }
     public Task<List<CommitInfoStructure>> GetHistory(string? sinceTag)
     {
         string targetSha = _repository.Commits.QueryBy(_gitCommitFilterOldestFirst).FirstOrDefault()?.Sha ?? throw new Exception("Cannot find first commit.");

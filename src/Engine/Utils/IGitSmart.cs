@@ -13,6 +13,7 @@ namespace DeployItSmart.Engine.Utils;
 */
 public interface IGitSmart
 {
+    string? GetTagCommitId(string targetTag);
     Task<List<string>> GetTagHistory();
     Task<List<CommitInfoStructure>> GetHistory(string? sinceTag);
 }
