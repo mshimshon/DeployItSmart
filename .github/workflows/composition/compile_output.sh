@@ -4,7 +4,7 @@ set -euo pipefail
 VERSION="${VERSION_NEXT:-}"
 VERSION_NS="${VERSION_NOSUFFIX:-}"
 if [ -z "$VERSION_NS" ]; then
-    $VERSION_NS=$VERSION
+    $VERSION_NS="$VERSION"
 fi
 MAJOR="${VERSION_NS%%.*}"
 MAJOR_ZERO_ZERO="${MAJOR}.0.0"
