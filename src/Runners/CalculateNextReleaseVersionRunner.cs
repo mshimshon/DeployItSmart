@@ -53,7 +53,14 @@ public class CalculateNextReleaseVersionRunner : IRunner
             throw new Exception("--IsFirstRelease not active for protection we block continuing.");
         if (latestStable == default)
             return NuGetVersion.Parse(ToolConfig.InitialVersion);
-        var commits = await _getTrackCommitMessages.GetHistory(latestStable.ToString());
+        List<TrackedCommitMessageStructure> commits = new();
+        try
+        {
+            commits = await _getTrackCommitMessages.GetHistory(latestStable.ToString());
+        }
+        catch (System.Exception)
+        {
+        }
 
         NuGetVersion? previewCommitToRelease = default;
         if (!IsFirstRelease && !isPreview)
@@ -77,14 +84,14 @@ public class CalculateNextReleaseVersionRunner : IRunner
 
 
         NuGetVersion? nextVersion;
-        if (previewCommitToRelease == default)
+        if (previewCommitToRelease == default || latestStable > previewCommitToRelease)
         {
             if (major > 0)
                 nextVersion = new(latestStable.Major + 1, 0, 0);
             else if (minor > 0)
                 nextVersion = new(latestStable.Major, latestStable.Minor + 1, 0);
             else
-                nextVersion = new(latestStable.Major, isPreview ? latestStable.Minor + 1 : latestStable.Minor, latestStable.Patch + 1);
+                nextVersion = new(latestStable.Major, isPreview ? latestStable.Minor + 1 : latestStable.Minor, isPreview ? 0 : latestStable.Patch + 1);
         }
         else
         {

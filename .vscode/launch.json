@@ -15,9 +15,9 @@
                 // "src\\DeployItSmart.csproj",
                 "--linkCommits",
                 "--nonLinearMasterFix",
-                // "--previewMode",
-                // "--previewMark",
-                // "rc"
+                "--previewMode",
+                "--previewMark",
+                "rc"
                 // "--allowUnsafeVersionFromSinceTag",
                 // "--sinceTag",
                 // "0.0.1"
