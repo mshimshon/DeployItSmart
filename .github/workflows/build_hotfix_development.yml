@@ -9,8 +9,7 @@ on:
 jobs:
   create-and-merge-dev-pr:
     if: |
-      github.event.pull_request.merged == true &&
-      (startsWith(github.event.pull_request.head.ref, 'source') || github.event.pull_request.head.ref == 'main-dev')
+      github.event.pull_request.merged == true && (startsWith(github.event.pull_request.head.ref, 'source') && github.event.pull_request.head.ref == 'main-dev')
 
     runs-on: ubuntu-latest
     permissions:
