@@ -152,6 +152,8 @@ The `skipci~` token blocks your CI/CD workflow if the head commit hitting the br
 
 ## Version System
 
+Exception for Preview Strategy: at least +1 minor next release cycle, only hotfixes are patch.
+
 This system uses a streamlined `1.1.1` versioning pattern, keeping complex syntax (like `1.0.0-alpha.1`) restricted to dedicated pre-release branches. It offers a lightweight, boilerplate-free alternative to heavy enterprise solutions for managing packages and projects.
 
 
@@ -203,19 +205,6 @@ During changelog generation, every single commit is analyzed based on the files 
 * **Segregated Output:** Changes targeting `src/myproject/` are written directly to a dedicated `myproject.md` file, while all remaining unassigned changes are routed to a fallback `_.md` file.
 * **Unified Main Changelog:** The main repository changelog automatically aggregates these individual files, displaying structured headers for each defined sub-project.
 
-### Release Strategy & Versioning
-
-To keep system complexity low, **all projects share a single, global version number**. This tool does not support independent versioning per project.
-
-For dedicated development workflows, a specialized `--previewMode` flag can be passed to enable natural preview releases on dedicated branches (like `main-dev`). This approach works incredibly well if your pipeline relies on opening PRs into `main-dev` and releasing by merging `main-dev` directly into `main`.
-
-#### How Preview Versioning Logic Works:
-* **Dynamic Tag Checking:** The tool reads existing production version tags and compares them against current preview tags.
-* **Stable Match Fallback:** If a new stable production tag is detected, the tool automatically bumps the next preview version up to cleanly align with the latest stable release.
-* **Smart Revisions:** Preview tags append a revision counter to the naturally calculated next version. For example, if the stable release is `1.0.0`, the next minor preview becomes `1.1.0-preview.1001`.
-* **Dynamic Major Bumps:** If a commit contains a major breaking change, the tool detects it instantly and steps the preview version up to `2.0.0-preview.1`. The versioning is entirely dynamic based on your features, but remains completely consistent with the latest stable.
-
-
 However, you can use conditional deployments (such as GitHub Actions) to skip releases for specific projects if no commits changes its child files (folder based):
 
 - **Missing Changelog**: If a commit contains no changes for `myproject`, the `myproject.1.0.1.md` file will not be generated.
@@ -223,6 +212,137 @@ However, you can use conditional deployments (such as GitHub Actions) to skip re
 - **Version Bumping**: The next time `myproject` receives an update, it will simply jump to the next global version number.
 
 > **Note**: If your sub-projects require entirely independent version histories, they should be moved into their own dedicated repositories.
+
+
+## How Preview Versioning Works
+
+Preview releases are entirely optional. Teams that do not require preview, they can release stable versions directly through their standard promotion process PR to main branch which at very least increase patch.
+
+The preview versioning model uses a **promotion branch strategy** combined short lived feature branch to merge in.
+
+### Branch Structure
+
+- **Main (stable) branch** contains production-ready releases only.
+- **Development branch** is the integration branch for new features, fixes, and future releases.
+- All significant changes are first developed in the development branch and later promoted to the main branch through pull requests.
+
+### Preview Version Calculation
+
+A key design principle is that the **development preview version is always at least one minor version ahead of the current stable release**.
+
+Examples:
+
+```text
+Stable: v1.0.0
+Preview: v1.1.0-preview.1
+Preview: v1.1.0-preview.2
+```
+
+```text
+Stable: v2.3.0
+Preview: v2.4.0-preview.1
+```
+
+This separation assumes repository policies are correctly enforced and ensures that ongoing development never conflicts with maintenance work performed on the current stable release line.
+
+### Hotfix Support
+
+Because the development branch always targets a future version, hotfixes can continue to be applied directly to the stable branch without negatively affecting preview development.
+
+Example:
+
+```text
+Stable Release Line
+v1.0.0
+ ├─ v1.0.1
+ ├─ v1.0.2
+ ├─ ...
+ └─ v1.0.99
+
+Development Line
+v1.1.0-preview.1
+ ├─ v1.1.0-preview.2
+ └─ ...
+```
+
+If a hotfix is required:
+
+1. Apply the fix to the stable branch.
+2. Release the hotfix version.
+3. Create a back merge the same change into the development branch.
+
+Example:
+
+```text
+v1.0.98
+ └─ Hotfix
+     └─ v1.0.99
+
+Development:
+v1.1.0-preview.5
+ └─ Re-PR same hotfix
+     └─ v1.1.0-preview.6
+```
+
+This guarantees that supported stable releases can continue receiving patches while future development progresses independently.
+
+### Major Version Rollovers
+
+Breaking changes and major architectural modifications should never be introduced directly into the stable branch.
+
+Instead, they begin in the development branch as a new preview series.
+
+Example:
+
+```text
+v1.0.0
+└── v1.1.0-preview.1
+    └── v1.1.0-preview.2
+        └── Breaking Change
+            └── v2.0.0-preview.1
+                └── PR Merge
+                    └── v2.0.0
+                        └── v2.1.0-preview.1
+```
+
+This process ensures version numbers always move forward in a predictable and controlled manner.
+
+### Recommended Release Cadence
+
+A short and consistent release cycle is strongly recommended.
+
+Typical workflow:
+
+```text
+New Stable Release
+    ↓
+Several months of features and fixes
+    ↓
+Regular promotion to stable releases
+    ↓
+Evaluate need for breaking changes
+    ↓
+Begin next major version development
+```
+
+In practice:
+
+- Feature releases should be delivered regularly.
+- Stable releases should be promoted frequently to avoid large release backlogs.
+- Major version development should be planned carefully because it typically slows the release cadence significantly.
+- Once major-version work begins, development and validation usually take longer until the next stable major release is ready.
+
+### Benefits
+
+- Maintains a clear separation between stable and future development.
+- Allows hotfixes to be released independently of ongoing feature work.
+- Prevents breaking changes from entering production prematurely.
+- Keeps version numbers progressing forward consistently.
+- Supports predictable release management and upgrade paths.
+
+### Preview Back Merge
+
+It is recommended to make a back merge post PR event on MAIN branch where the script attempts to introduce the same PR into development branch unless is encounters conflicts it create a branch and a PR so dev team can see they need to fix that merge.
 
 
 ## Git Post-Commit

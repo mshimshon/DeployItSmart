@@ -48,7 +48,7 @@ public class GetCurrentPreReleaseVersionRunner : IRunner
             if (current != default)
                 GithubOutput("version_current_preview", current.ToString());
             else if (VersionRunnerConfig.IsFirstRelease)
-                GithubOutput("version_current_preview", $"0.0.0-{VersionRunnerConfig.PreviewMark}.1");
+                GithubOutput("version_current_preview", $"0.0.0-{ToolConfig.PreviewMark}.1");
             else
                 throw new Exception("Current Version Null Required due to --ghOutput and no --isFirstRelease");
         Console.WriteLine(current?.ToString() ?? "");

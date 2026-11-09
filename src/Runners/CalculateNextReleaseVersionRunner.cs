@@ -82,8 +82,9 @@ public class CalculateNextReleaseVersionRunner : IRunner
             major = major + earnedMajors;
         }
 
-
+        bool hasSignificantChanges = minor > 0 || major > 0;
         NuGetVersion? nextVersion;
+
         if (previewCommitToRelease == default || latestStable > previewCommitToRelease)
         {
             if (major > 0)
@@ -99,9 +100,9 @@ public class CalculateNextReleaseVersionRunner : IRunner
         }
 
 
-        if (isPreview && (latestPreview == default || latestPreview < latestStable))
+        if (isPreview && (latestPreview == default || latestPreview < latestStable || latestPreview < nextVersion))
         {
-            var releaseLabels = new[] { VersionRunnerConfig.PreviewMark, "1" };
+            var releaseLabels = new[] { ToolConfig.PreviewMark, "1" };
             nextVersion = new(nextVersion.Major, nextVersion.Minor, 0, releaseLabels!, null);
 
         }

@@ -13,6 +13,7 @@ public class GitSmart : IGitSmart, IDisposable
     private bool _disposedValue;
     private readonly string _masterBranch;
     private readonly string _currentBranch;
+    private readonly string _devBranch;
     private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
     {
         SortBy = CommitSortStrategies.Reverse
@@ -22,7 +23,8 @@ public class GitSmart : IGitSmart, IDisposable
     {
         _repository = new Repository(Environment.CurrentDirectory);
         _currentBranch = _repository.Head.FriendlyName;
-        _masterBranch = _toolConf.ReleasePromotionFlow.First().Key;
+        _masterBranch = _toolConf.MasterBranch;
+        _devBranch = _toolConf.DevelopBranch;
         FetchRemoteTags();
 
     }
@@ -55,6 +57,29 @@ public class GitSmart : IGitSmart, IDisposable
             bool confirmTargetInHistory = _repository.Commits.Any(p => p.Id.Sha == targetSha);
             if (!confirmTargetInHistory && _masterBranch == _currentBranch)
                 throw new Exception($"Tag: {sinceTag} is not in the history of {_repository.Head.CanonicalName} this is most likely due to misconfiguration of repository should enable rebase merge for PR.");
+            else if (!confirmTargetInHistory && _masterBranch == _devBranch)
+            {
+                var masterHistory = _repository.Branches[$"origin/{_masterBranch}"];
+                bool foundTag = false;
+                bool foundMatch = false;
+                foreach (var masterCommit in masterHistory.Commits)
+                    if (foundMatch)
+                        break;
+                    else if (!foundTag && targetSha == masterCommit.Id.Sha)
+                        foundTag = true;
+                    else if (foundTag)
+                        foreach (var devCommit in _repository.Commits)
+                            if (devCommit.Id.Sha == masterCommit.Id.Sha)
+                            {
+                                foundMatch = true;
+                                targetSha = devCommit.Id.Sha; // Found most recent common match
+
+                                break;
+                            }
+            }
+            else if (!confirmTargetInHistory && _currentBranch != _masterBranch && _currentBranch != _devBranch)
+                throw new Exception($"Tag: {sinceTag} is not in the history of {_repository.Head.CanonicalName} this is most likely due to misconfiguration of repository should enable rebase merge for PR.");
+
         }
 
         List<CommitInfoStructure> targetedExtraction = [];
