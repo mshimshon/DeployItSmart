@@ -294,7 +294,7 @@ public class GenerateChangeLogRunner : IRunner
             projectFixImportantSection[project] = GetBlockSection(TrackerReleaseType.FixImportant, newCommits, itemLocal, associated);
             projectNoteImportantSection[project] = GetBlockSection(TrackerReleaseType.NoteImportant, newCommits, itemLocal, associated);
             projectFeatureSection[project] = GetBlockSection(TrackerReleaseType.Feature, newCommits, itemLocal, associated);
-            projectFeatureSection[project] = GetBlockSection(TrackerReleaseType.Security, newCommits, itemLocal, associated);
+            projectSecuritySection[project] = GetBlockSection(TrackerReleaseType.Security, newCommits, itemLocal, associated);
             projectFixSection[project] = GetBlockSection(TrackerReleaseType.Fix, newCommits, itemLocal, associated);
             projectNoteSection[project] = GetBlockSection(TrackerReleaseType.Note, newCommits, itemLocal, associated);
             projectSponsorImportantSection[project] = GetBlockSection(TrackerReleaseType.SponsorImportant, newCommits, itemLocal, associated);
@@ -302,7 +302,7 @@ public class GenerateChangeLogRunner : IRunner
             projectThanksImportantSection[project] = GetBlockSection(TrackerReleaseType.ThanksImportant, newCommits, itemLocal, associated);
             projectThanksSection[project] = GetBlockSection(TrackerReleaseType.Thanks, newCommits, itemLocal, associated);
         }
-        return MapToProjects(
+        var map = MapToProjects(
             projectFeatureSection,
             projectFeatureBreakingSection,
             projectFeatureImportantSection,
@@ -320,6 +320,7 @@ public class GenerateChangeLogRunner : IRunner
             projectSecurityBreakingSection,
             projectSecurityImportantSection
         );
+        return map;
     }
 
     public async Task GenerateChangelog()
