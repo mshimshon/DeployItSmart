@@ -1,5 +1,6 @@
 {
     "dotnet.defaultSolution": "DeployItSmart.slnx",
+    "files.eol": "\n",
     "git.showActionButton": {
         "commit": true,
         "publish": false,

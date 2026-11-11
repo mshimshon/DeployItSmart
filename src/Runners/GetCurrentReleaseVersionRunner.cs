@@ -45,11 +45,11 @@ public class GetCurrentReleaseVersionRunner : IRunner
         var current = await GetCurrentTag();
         if (VersionRunnerConfig.GithubOutput)
             if (current != default)
-                GithubOutput("version_current", current.ToString());
+                GithubOutput("version_current", current.ToString(), VersionRunnerConfig.GithubOutputNullable);
             else if (VersionRunnerConfig.IsFirstRelease)
-                GithubOutput("version_current", $"0.0.0");
+                GithubOutput("version_current", $"0.0.0", VersionRunnerConfig.GithubOutputNullable);
             else
-                throw new Exception("Current Version Null Required due to --ghOutput and no --isFirstRelease");
+                throw new Exception("Current Version Null Required due to --isFirstRelease");
         Console.WriteLine(current?.ToString() ?? "");
     }
     private readonly string _regexSemVer = @"^v\d+\.\d+\.\d+$";

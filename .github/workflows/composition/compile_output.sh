@@ -1,23 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION_NEXT="${VERSION_NEXT:-}"
-VERSION_NEXT_PREVIEW="${VERSION_NEXT_PREVIEW:-}"
+VERSION="${VERSION_NEXT:-}"
+VERSION_NS="${VERSION_NOSUFFIX:-}"
+if [ -z "$VERSION_NS" ]; then
+    VERSION_NS="$VERSION"
+fi
+MAJOR="${VERSION_NS%%.*}"
+MAJOR_ZERO_ZERO="${MAJOR}.0.0"
+
 BRANCH="${BRANCH:-}"
 
-if [ "$BRANCH" = "main-dev" ]; then
-  if [ -z "$VERSION_NEXT_PREVIEW" ]; then
-    echo "::error::main-dev build but VERSION_NEXT_PREVIEW is empty" >&2
-    exit 1
-  fi
-  VERSION="$VERSION_NEXT_PREVIEW"
-else
-  if [ -z "$VERSION_NEXT" ]; then
-    echo "::error::VERSION_NEXT is empty" >&2
-    exit 1
-  fi
-  VERSION="$VERSION_NEXT"
-fi
 
 echo "Releasing version: $VERSION"
 OUT="/tmp/artifacts/output";
@@ -33,8 +26,8 @@ COMMON_ARGS=(
   "-p:DebugType=none"
   "-p:Version=$VERSION"
   "-p:InformationalVersion=$VERSION"
-  "-p:AssemblyVersion=$VERSION_NEXT" # Always use the next natural version for the assembly that way version changes from the currrent stable.
-  "-p:FileVersion=$VERSION_NEXT" # Always use the next natural version for the assembly that way version changes from the currrent stable.
+  "-p:AssemblyVersion=$MAJOR_ZERO_ZERO"
+  "-p:FileVersion=$VERSION_NS" # Always use the next natural version for the assembly that way version changes from the currrent stable.
   "-p:PublishAot=false"
 )
 

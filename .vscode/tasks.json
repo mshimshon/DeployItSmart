@@ -2,17 +2,17 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Act Workflow Build",
+            "label": "Act Workflow Hotfix Build",
             "command": "act",
             "type": "shell",
             "args": [
-                "workflow_dispatch",
+                "pull_request",
                 "-W",
-                ".github/workflows/build.yml",
+                ".github/workflows/gh_pr_main_preview.yml",
                 "--artifact-server-path",
                 ".\\.bin\\.artifacts",
                 "-e",
-                ".github/workflows/event.json",
+                ".github/workflows/event-dev.json",
             ],
             "problemMatcher": "$msCompile"
         },
@@ -31,7 +31,7 @@
             ],
             "problemMatcher": "$msCompile",
             "dependsOn": [
-                "Act Workflow Build",
+                "Act Workflow Hotfix Build",
             ],
         },
         {

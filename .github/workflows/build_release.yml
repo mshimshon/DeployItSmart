@@ -1,0 +1,122 @@
+name: Stable
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch: # Necessary for the explicit 'act workflow_dispatch' command
+
+jobs:
+  CreateHotfixDevelopment:
+    if: github.event.pull_request.merged == true && github.event.pull_request.head.ref != 'main-dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create and Auto-Merge PR into main-dev
+        if: ${{ !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "Creating a new PR targeting 'main-dev'..."
+
+          # 1. Create the PR and capture the URL
+          PR_URL=$(gh pr create \
+            --base main-dev \
+            --head "$SOURCE_BRANCH" \
+            --title "Sync Hotfix (from PR )" \
+            --body "This PR was automatically created to Main HotFix from '$SOURCE_BRANCH' (PR: #$PR_NUMBER) into main-dev.")
+
+          echo "PR created successfully: $PR_URL"
+
+          # 2. Attempt to merge immediately. Branch is kept alive.
+          echo "Attempting to merge PR..."
+          if gh pr merge "$PR_URL" --merge --auto; then
+            echo "✅ PR successfully merged (or queued for auto-merge). Branch '$SOURCE_BRANCH' was kept alive."
+          else
+            echo "⚠️ Auto-merge failed. The PR remains open and branch '$SOURCE_BRANCH' is active for manual conflict resolution."
+          fi
+
+  PatchMainStable:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      id-token: write
+      contents: read
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+
+      - name: Building DeployItSmart ;)
+        shell: bash
+        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
+
+
+      - name: Get Last Version Tag
+        id: version_control
+        shell: bash
+        run: |
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
+          if [ "$HEAD_REF" = "main-dev" ]; then
+            echo "Releasing Next Stable from Main Development"
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
+          else
+            echo "The incoming branch is $HEAD_REF."
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --patchStableOnly
+          fi
+
+      - name: Building Shipping Release DeployItSmart ;)
+        run: bash -e .github/workflows/composition/compile_output.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name  }}
+
+      - name: Generate Release Notes
+        shell: bash
+        run: |
+          if [ "$HEAD_REF" = "main-dev" ]; then
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+          else
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --patchStableOnly
+          fi
+
+      - name: Validating Output
+        shell: bash
+        run: bash -e .github/workflows/composition/validate_output.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}
+          BRANCH:  ${{ github.ref_name }}
+
+      - name: Save Variables for Deploy
+        shell: bash
+        run: |
+          mkdir -p /tmp/artifacts/output
+          echo "version_next=${{ steps.version_control.outputs.version_next }}" >> /tmp/artifacts/output/build.env
+          echo "version_current=${{ steps.version_control.outputs.version_current }}" >> /tmp/artifacts/output/build.env
+          echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
+          ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"
+
+      - name: Upload Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets # Label
+          path: /tmp/artifacts/output/

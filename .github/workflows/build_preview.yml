@@ -1,0 +1,76 @@
+name: Preview
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main-dev
+  workflow_dispatch: # Necessary for the explicit 'act workflow_dispatch' command
+
+jobs:
+  ReleasePreview:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      id-token: write
+      contents: read
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+
+      - name: Building DeployItSmart ;)
+        shell: bash
+        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
+
+
+      - name: Get Last Version Tag
+        id: version_control
+        shell: bash
+        run: |
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode
+
+      - name: Building Shipping Release DeployItSmart ;)
+        run: bash -e .github/workflows/composition/compile_output.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next_preview }}
+          VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
+          BRANCH:  ${{ github.ref_name  }}
+
+      - name: Generate Release Notes
+        shell: bash
+        run: |
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode
+
+      - name: Validating Output
+        shell: bash
+        run: bash -e .github/workflows/composition/validate_output.sh
+        env:
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next_preview }}
+          VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
+          BRANCH:  ${{ github.ref_name }}
+
+      - name: Save Variables for Deploy
+        shell: bash
+        run: |
+          mkdir -p /tmp/artifacts/output
+          echo "version_next=${{ steps.version_control.outputs.version_next_preview }}" >> /tmp/artifacts/output/build.env
+          echo "version_current=${{ steps.version_control.outputs.version_current_preview }}" >> /tmp/artifacts/output/build.env
+          echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
+          ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"
+
+      - name: Upload Build Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets # Label
+          path: /tmp/artifacts/output/
