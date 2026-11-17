@@ -3,6 +3,7 @@ using System;
 using LibGit2Sharp;
 using static DeployItSmart.Engine.Configuration.ConfigurationRunner;
 using DeployItSmart.Engine.Configuration;
+using NuGet.Versioning;
 
 namespace DeployItSmart.Engine.Utils;
 
@@ -44,6 +45,17 @@ public class GitSmart : IGitSmart, IDisposable
         };
         Commands.Fetch(_repository, remote.Name, remote.FetchRefSpecs.Select(r => r.Specification), fetchOptions, null);
     }
+
+    public bool TagInBranch(string vTagNoV)
+    {
+        var sha = GetTagCommitId(vTagNoV);
+        return sha != default && CommitInBranch(sha);
+    }
+    public bool CommitInBranch(string sha)
+    {
+        return _repository.Commits.Any(p => p.Id.Sha == sha);
+    }
+
     public string? GetTagCommitId(string targetTag)
     {
         var tag = _repository.Tags.FirstOrDefault(p => p.FriendlyName.Equals($"v{targetTag}", StringComparison.OrdinalIgnoreCase));

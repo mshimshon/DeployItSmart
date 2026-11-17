@@ -46,7 +46,8 @@ public record class TrackedCommitMessageStructure
 	{
 		int count = 0;
 		foreach (var item in TokenDirtyMessages)
-			count += item.Value.Count;
+			if (item.Key != TrackerDirtyType.DevMessage)
+				count += item.Value.Count;
 		return count;
 	}
 }
