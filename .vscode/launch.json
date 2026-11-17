@@ -15,10 +15,10 @@
                 // "src\\DeployItSmart.csproj",
                 "--linkCommits",
                 "--nonLinearMasterFix",
-                "--previewMode",
+                // "--previewMode",
                 // "--allowUnsafeVersionFromSinceTag",
-                // "--sinceTag",
-                // "0.0.1"
+                "--sinceTag",
+                "6.3.1"
             ],
             "cwd": "${input:targetRepository}",
             "console": "internalConsole",
