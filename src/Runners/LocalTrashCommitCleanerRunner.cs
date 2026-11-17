@@ -17,11 +17,13 @@ public class LocalTrashCommitCleanerRunner : IRunner
 {
     private ToolConf ToolConfig => GetToolConfiguration();
     private readonly GetCurrentReleaseVersionRunner _currentReleaseVersion;
+    private readonly GetCurrentPreReleaseVersionRunner _previewReleaseVersion;
     private readonly GetTrackCommitMessagesRunner _getTrackCommitMessages;
     private readonly MessageSearchTool _messageTool;
     public LocalTrashCommitCleanerRunner()
     {
         _currentReleaseVersion = new GetCurrentReleaseVersionRunner();
+        _previewReleaseVersion = new GetCurrentPreReleaseVersionRunner();
         _getTrackCommitMessages = new GetTrackCommitMessagesRunner();
         _messageTool = new MessageSearchTool();
     }
@@ -31,12 +33,25 @@ public class LocalTrashCommitCleanerRunner : IRunner
     {
         await CleanCommits();
     }
-
     public async Task CleanCommits()
     {
+
         var currentVersion = await _currentReleaseVersion.GetCurrentTag();
-        string? sinceTag = currentVersion != default ? currentVersion.ToString() : null;
-        var history = await _getTrackCommitMessages.GetHistory(sinceTag);
+        bool currentExist = currentVersion != default && ServiceAccessor.Use<IGitSmart>().TagInBranch(currentVersion.ToString());
+        var previewVersion = await _previewReleaseVersion.GetCurrentPreviewTag();
+        bool previewExist = previewVersion != default && ServiceAccessor.Use<IGitSmart>().TagInBranch(previewVersion.ToString());
+        string? sinceTag = default;
+        if (previewVersion != default && currentVersion != default && currentExist && previewExist)
+            if (previewVersion > currentVersion)
+                sinceTag = previewVersion.ToString();
+            else
+                sinceTag = currentVersion.ToString();
+        else if (previewExist && previewVersion != default)
+            sinceTag = previewVersion.ToString();
+        else if (currentExist && currentVersion != default)
+            sinceTag = currentVersion.ToString();
+
+        List<TrackedCommitMessageStructure> history = await _getTrackCommitMessages.GetHistory(sinceTag);
         if (history.Count <= 1) return;
         var lastCommit = history.First();
         // if (lastCommit.CountDirtyToken() > 0 && lastCommit.CountReleaseToken() <= 0)
@@ -112,8 +127,9 @@ public class LocalTrashCommitCleanerRunner : IRunner
 
         if (lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].Count > 0)
             nMessages.Add(AddDirtyTokenToMessage(TrackerDirtyType.TraceNoTrigger, lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].First()));
-
-        nMessages.AddRange(tokenDirtyMessages[TrackerDirtyType.DevMessage]); // developer messages
+        foreach (var item in tokenDirtyMessages[TrackerDirtyType.DevMessage])
+            if (!nMessages.Contains(item, StringComparer.OrdinalIgnoreCase))
+                nMessages.Add(item); // developer messages, clear duplicates
         nMessages.AddRange(tokenMessages.SelectMany(p => p.Value)); // changelog messages
 
         var nCommitMessage = string.Join("\n", nMessages);
@@ -179,6 +195,8 @@ public class LocalTrashCommitCleanerRunner : IRunner
         string token = string.Empty;
         if (tokenType == TrackerDirtyType.TraceNoTrigger)
             token = ToolConfig.ReleaseNoTriggerTokens[0];
+        else if (tokenType == TrackerDirtyType.DevMessage)
+            token = ToolConfig.CommitMessageTokens[0];
         else
             token = ToolConfig.ReleaseDirtyTokens[0];
         return AddTokenKeyToMessage(token, message);

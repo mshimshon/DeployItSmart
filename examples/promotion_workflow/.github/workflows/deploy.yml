@@ -59,6 +59,21 @@ jobs:
               echo "The current version: ${{ steps.version_control.outputs.version_current }}"
               echo "release_version=${{ steps.version_control.outputs.version_next }}" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Checkout triggering branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.version_control.outputs.trigger_branch }}
+          fetch-depth: 0
+
+      - name: Create Release Tag
+        if: ${{ !env.ACT }}
+        run: |
+          SHA=$(git rev-parse HEAD) || exit 1
+          echo "Pushing ${{ steps.version_control.outputs.trigger_branch }} v${{ steps.version_control.outputs.version_next }} $SHA"
+          git tag "v${{ steps.version_control.outputs.version_next }}" "$SHA"
+          git push origin "v${{ steps.version_control.outputs.version_next }}"
+
       # Create Github Release.
       - name: Create GitHub Release
         if: ${{ !env.ACT }}
