@@ -4,4 +4,5 @@ public enum TrackerDirtyType
 {
     WorkInProgress = 0,
     TraceNoTrigger = 2,
+    DevMessage = 3,
 }

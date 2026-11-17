@@ -158,23 +158,24 @@ Exception for Preview Strategy: at least +1 minor next release cycle, only hotfi
 This system uses a streamlined `1.1.1` versioning pattern, keeping complex syntax (like `1.0.0-alpha.1`) restricted to dedicated pre-release branches. It offers a lightweight, boilerplate-free alternative to heavy enterprise solutions for managing packages and projects.
 
 
-| Token       | Description                                                       | Version Change | Example          |
-| ----------- | ----------------------------------------------------------------- | -------------- | ---------------- |
-| `feat!:`    | New Feature Breaking Change                                       | MAJOR          | `1.0.0 -> 2.0.0` |
-| `feat~:`    | Important Feature Without Breaking                                | MINOR          | `1.0.0 -> 1.1.0` |
-| `feat:`     | Non Breaking Feature                                              | MINOR          | `1.0.0 -> 1.1.0` |
-| `fix!:`     | Fix With Breaking Changes                                         | MAJOR          | `1.0.0 -> 2.0.0` |
-| `fix~:`     | Important Fix non-breaking                                        | PATCH          | `1.0.0 -> 1.0.1` |
-| `fix:`      | Non Breaking Fix                                                  | PATCH          | `1.0.0 -> 1.0.1` |
-| `note!:`    | Release Note with Breaking Changes                                | MAJOR          | `1.0.0 -> 2.0.0` |
-| `note~:`    | Important Note without Breaking Changes                           | PATCH          | `1.0.0 -> 1.0.1` |
-| `note:`     | Release Note                                                      | PATCH          | `1.0.0 -> 1.0.1` |
-| `sponsor~:` | Realese Super Duper Sponsor!                                      | PATCH          | `1.0.0 -> 1.0.1` |
-| `sponsor:`  | Release Sponsor                                                   | PATCH          | `1.0.0 -> 1.0.1` |
-| `thank~:`   | Release Super Thanks                                              | PATCH          | `1.0.0 -> 1.0.1` |
-| `thank:`    | Release Thank                                                     | PATCH          | `1.0.0 -> 1.0.1` |
-| `wip:`      | Dirty Work in progress, should not be pushed.                     | PATCH          | `1.0.0 -> 1.0.1` |
-| `skipci~:`  | Push/Merge without triggering the release workflow if implemented | PATCH          | `1.0.0 -> 1.0.1` |
+| Token       | Description                                                                   | Version Change | Example          |
+| ----------- | ----------------------------------------------------------------------------- | -------------- | ---------------- |
+| `feat!:`    | New Feature Breaking Change                                                   | MAJOR          | `1.0.0 -> 2.0.0` |
+| `feat~:`    | Important Feature Without Breaking                                            | MINOR          | `1.0.0 -> 1.1.0` |
+| `feat:`     | Non Breaking Feature                                                          | MINOR          | `1.0.0 -> 1.1.0` |
+| `fix!:`     | Fix With Breaking Changes                                                     | MAJOR          | `1.0.0 -> 2.0.0` |
+| `fix~:`     | Important Fix non-breaking                                                    | PATCH          | `1.0.0 -> 1.0.1` |
+| `fix:`      | Non Breaking Fix                                                              | PATCH          | `1.0.0 -> 1.0.1` |
+| `note!:`    | Release Note with Breaking Changes                                            | MAJOR          | `1.0.0 -> 2.0.0` |
+| `note~:`    | Important Note without Breaking Changes                                       | PATCH          | `1.0.0 -> 1.0.1` |
+| `note:`     | Release Note                                                                  | PATCH          | `1.0.0 -> 1.0.1` |
+| `sponsor~:` | Realese Super Duper Sponsor!                                                  | PATCH          | `1.0.0 -> 1.0.1` |
+| `sponsor:`  | Release Sponsor                                                               | PATCH          | `1.0.0 -> 1.0.1` |
+| `thank~:`   | Release Super Thanks                                                          | PATCH          | `1.0.0 -> 1.0.1` |
+| `thank:`    | Release Thank                                                                 | PATCH          | `1.0.0 -> 1.0.1` |
+| `wip:`      | Dirty Work in progress, should not be pushed.                                 | PATCH          | `1.0.0 -> 1.0.1` |
+| `dev:`      | Actual Commit Message for other developers, doesn't print in output changelog | PATCH          | `1.0.0 -> 1.0.1` |
+| `skipci~:`  | Push/Merge without triggering the release workflow if implemented             | PATCH          | `1.0.0 -> 1.0.1` |
 
 ### Rollover Versioning
 The system enforces a default limit of `10000` increments per tier to trigger automatic version rollovers.

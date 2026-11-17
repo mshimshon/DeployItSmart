@@ -16,7 +16,6 @@ public record class ToolConf
 
     public string EmptyLogMessageComment { get; set; } = "When you are not using --autoFailEmptyResult the generator will put that message in empty logs for master and projects.";
     public string EmptyLogMessage { get; set; } = "This release has no information.";
-
     public string HeaderComment { get; set; } = "Headers are the actual printed head section of the final changelog markdown.";
     public string FeatureHeader { get; set; } = "New Features";
     public string FeatureImportantHeader { get; set; } = "New Features (Important)";
@@ -54,6 +53,8 @@ public record class ToolConf
         {@"\{steam;([^;]+);([^}]+)\}", "[{gp:2}](https://steamcommunity.com/id/{gp:1})"},
         {@"\{discord_user;([^;]+);([^}]+)\}", "[{gp:2}](https://discord.com/users/{gp:1})"},
         {@"\{discord;([^;]+);([^}]+)\}", "[{gp:2}](https://discord.gg/{gp:1})"},
+        {@"\{issue;([^;]+)\}", "[Issue #{gp:1}](https://github.com/mshimshon/LunaticPanel/issues/{gp:1})"},
+        {@"\{feature;([^;]+)\}", "[Feature #{gp:1}](https://github.com/mshimshon/LunaticPanel/issues/{gp:1})"},
     };
     public string TagMarkdownComment { get; set; } = "Those are the post processing filtering, using regex to group and map to Markdown with ability to extract groups like so 'XXXXX' -> '[Visit {gp:1} At MyProfile](https://myprofile.com/{gp:0})'";
     public Dictionary<string, string> TagMarkdown { get; set; } = new();
@@ -75,7 +76,9 @@ public record class ToolConf
     public string ReleaseDirtyTokensComment { get; set; } = "Those dirty token aren't meant to be push remotely, if pushed dev will have to do manually reset to clear it before pushing finished work... those are meant to be local the tool clear them up instantly post-commit.";
 
     public IReadOnlyList<string> ReleaseDirtyTokens { get; set; } = new[] { "wip" };
+    public string CommitMessageTokensComment { get; set; } = "Actual Commit message dedicated to other developers just like regular commits, they will not be cleaned up and will not appear in the final changelog.";
 
+    public IReadOnlyList<string> CommitMessageTokens { get; set; } = new[] { "dev" };
     public string ReleaseNoTriggerTokensComment { get; set; } = "Another special token is the skipci~: which if configured correctly makes the action skip, this is design for early stage or lax rules direct main push.";
     public IReadOnlyList<string> ReleaseNoTriggerTokens { get; set; } = new[] { "skipci" };
 

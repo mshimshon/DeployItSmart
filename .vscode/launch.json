@@ -44,6 +44,7 @@
             "description": "Select the command to test",
             "options": [
                 "GenerateChangeLogRunner",
+                "GenerateDevMessagesRunner",
                 "GetCommitInfoSinceRunner",
                 "GenerateCustomConfigRunner",
                 "GetTrackCommitMessagesRunner",
