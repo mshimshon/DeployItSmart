@@ -60,6 +60,8 @@ public class MessageSearchTool
         {
             case TrackerDirtyType.TraceNoTrigger:
                 return ToolConfig.ReleaseNoTriggerTokens.ToArray();
+            case TrackerDirtyType.DevMessage:
+                return ToolConfig.CommitMessageTokens.ToArray();
             default:
                 return ToolConfig.ReleaseDirtyTokens.ToArray();
         }
@@ -93,6 +95,7 @@ public class MessageSearchTool
         List<KeyValuePair<TrackerDirtyType, List<string>>> dirtyMessages = [
             ExtractDirtyTypeFor(TrackerDirtyType.WorkInProgress, message),
             ExtractDirtyTypeFor(TrackerDirtyType.TraceNoTrigger, message),
+            ExtractDirtyTypeFor(TrackerDirtyType.DevMessage, message),
         ];
         return dirtyMessages.ToDictionary(p => p.Key, p => p.Value);
     }

@@ -67,6 +67,7 @@ public class LocalTrashCommitCleanerRunner : IRunner
         Dictionary<TrackerDirtyType, List<string>> tokenDirtyMessages = new()
         {
             [TrackerDirtyType.TraceNoTrigger] = new List<string>(),
+            [TrackerDirtyType.DevMessage] = new List<string>(),
             [TrackerDirtyType.WorkInProgress] = new List<string>(),
         };
 
@@ -103,13 +104,17 @@ public class LocalTrashCommitCleanerRunner : IRunner
         var repo = new Repository(Path.Combine(Environment.CurrentDirectory));
         var commit = repo.Lookup<Commit>(resetPoint.CommitId); ;
 
-        var nMessages = tokenMessages.SelectMany(p => p.Value).ToList();
+        var nMessages = new List<string>();
+        // dirty token wip: and skipci~: comes first.
         if (lastCommit.TokenDirtyMessages[TrackerDirtyType.WorkInProgress].Count > 0)
             foreach (var wip in lastCommit.TokenDirtyMessages[TrackerDirtyType.WorkInProgress])
                 nMessages.Add(AddDirtyTokenToMessage(TrackerDirtyType.WorkInProgress, wip));
 
         if (lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].Count > 0)
             nMessages.Add(AddDirtyTokenToMessage(TrackerDirtyType.TraceNoTrigger, lastCommit.TokenDirtyMessages[TrackerDirtyType.TraceNoTrigger].First()));
+
+        nMessages.AddRange(tokenDirtyMessages[TrackerDirtyType.DevMessage]); // developer messages
+        nMessages.AddRange(tokenMessages.SelectMany(p => p.Value)); // changelog messages
 
         var nCommitMessage = string.Join("\n", nMessages);
         if (string.IsNullOrWhiteSpace(nCommitMessage))
