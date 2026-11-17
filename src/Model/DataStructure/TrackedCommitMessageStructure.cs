@@ -29,6 +29,7 @@ public record class TrackedCommitMessageStructure
 	public Dictionary<TrackerDirtyType, List<string>> TokenDirtyMessages { get; init; } = new()
 	{
 		[TrackerDirtyType.TraceNoTrigger] = new List<string>(),
+		[TrackerDirtyType.DevMessage] = new List<string>(),
 		[TrackerDirtyType.WorkInProgress] = new List<string>(),
 	};
 	public List<string> AffectedFiles { get; init; } = [];
