@@ -63,6 +63,15 @@ depitsmart GenerateChangeLogRunner --output "/tmp/changelogs" --linkCommits # ad
 depitsmart GenerateChangeLogRunner --output "/tmp/changelogs"  --previewMode # Same be will generate
 ```
 
+- `GenerateDevMessagesRunner` generate dev messages file `dev.VERSION.md` (used but automation to either add the newly created PR or manually locally to get changes to mentioned in PR.)
+```bash
+depitsmart GenerateDevMessagesRunner --output "/tmp/changelogs" # Generate log output dev.x.x.x.md since the last v tag
+depitsmart GenerateDevMessagesRunner --output "/tmp/changelogs" --sinceTag "1.0.0" # Generate log output _.x.x.x.md since the version will still generate for the next version but will include the changes since
+depitsmart GenerateDevMessagesRunner --output "/tmp/changelogs" --sinceTag "1.0.0" --allowUnsafeVersionFromSinceTag # same as before but will generate file version from 'sinceTag' rather than current it is dangerously unsafe.
+depitsmart GenerateDevMessagesRunner --output "/tmp/changelogs" --autoFailEmptyResult # Exit 1 if the changelog is empty otherwise it generates empty changelog with message.
+depitsmart GenerateDevMessagesRunner --output "/tmp/changelogs"  --previewMode # Same be will generate
+```
+
 
 
 - `GenerateCustomConfigRunner` creates the user configuration file `.github/config/deploy_it_smart.json` with default parameters.

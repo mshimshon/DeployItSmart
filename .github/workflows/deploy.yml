@@ -42,11 +42,7 @@ jobs:
           ls -laR /tmp/artifacts || echo "no /tmp/artifacts"
           grep -E '^[A-Za-z_][A-Za-z0-9_]*=' /tmp/artifacts/output/build.env | tr -d '\r' >> "$GITHUB_OUTPUT"
 
-      - name: Checkout triggering branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.version_control.outputs.trigger_branch }}
-          fetch-depth: 0
+
 
       - name: NuGet login (OIDC → temp API key)
         if: ${{ !env.ACT }}
@@ -54,6 +50,12 @@ jobs:
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
+
+      - name: Checkout triggering branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.version_control.outputs.trigger_branch }}
+          fetch-depth: 0
 
       - name: Create Release Tag
         if: ${{ !env.ACT }}
