@@ -58,8 +58,10 @@ jobs:
       - name: Create Release Tag
         if: ${{ !env.ACT }}
         run: |
-          git tag v${{ steps.version_control.outputs.version_next }} ${{ github.sha }}
-          git push origin v${{ steps.version_control.outputs.version_next }}
+          SHA=$(git rev-parse HEAD) || exit 1
+          echo "Pushing ${{ steps.version_control.outputs.trigger_branch }} v${{ steps.version_control.outputs.version_next }} $SHA"
+          git tag "v${{ steps.version_control.outputs.version_next }}" "$SHA"
+          git push origin "v${{ steps.version_control.outputs.version_next }}"
 
       - name: Create GitHub Release
         if: ${{ !env.ACT }}
