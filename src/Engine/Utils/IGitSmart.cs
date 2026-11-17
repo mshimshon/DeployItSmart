@@ -16,6 +16,9 @@ public interface IGitSmart
     bool IsMainBranch { get; }
     bool IsDevBranch { get; }
     string? GetTagCommitId(string targetTag);
+    bool TagInBranch(string vTagNoV);
+    bool CommitInBranch(string sha);
+
     Task<List<string>> GetTagHistory();
     Task<List<CommitInfoStructure>> GetHistory(string? sinceTag);
 }
