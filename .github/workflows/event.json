@@ -4,5 +4,18 @@
         "conclusion": "success",
         "head_branch": "main",
         "head_sha": "abc123"
+    },
+    "action": "closed",
+    "pull_request": {
+        "id": 1,
+        "merged": true,
+        "number": 123,
+        "title": "Fixing some critical bugs",
+        "head": {
+            "ref": "source/main-dev",
+            "commit": {
+                "message": "Regular commit message here"
+            }
+        }
     }
 }
