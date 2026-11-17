@@ -193,7 +193,7 @@ The multi-project setup is an advanced feature that allows you to generate segre
 ### Configure
 ```json
   "Projects": {
-    "_": "My Project Name", // ROOT main log
+    "_": "My Project Name", // ROOT main log s
     "src/DeployItSmart.csproj": "Deploy It Smart" // Specific Sub Project FILE
   },
 

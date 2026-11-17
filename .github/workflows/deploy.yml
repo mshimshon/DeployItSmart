@@ -49,6 +49,12 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
+      - name: Create Release Tag
+        if: ${{ !env.ACT }}
+        run: |
+          git tag v${{ steps.version_control.outputs.version_next }} ${{ github.sha }}
+          git push origin v${{ steps.version_control.outputs.version_next }}
+
       - name: Create GitHub Release
         if: ${{ !env.ACT }}
         uses: softprops/action-gh-release@v2
