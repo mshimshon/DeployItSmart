@@ -82,7 +82,7 @@ public class GenerateDevMessagesRunner : IRunner
                     devCleanMessages.Add(message);
         }
 
-        List<MdBlock> blocks = [new MdHeading($"## Development Changes", 1)];
+        List<MdBlock> blocks = [new MdHeading($"Development Changes", 2)];
         bool emptyLog = devCleanMessages.Count <= 0;
         if (emptyLog && ChangeLogConfig.FailOnEmpty)
             throw new Exception("Nothing to Write in Dev changes");
