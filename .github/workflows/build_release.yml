@@ -75,6 +75,7 @@ jobs:
         id: version_control
         shell: bash
         run: |
+          HEAD_REF=$"${{ github.event.pull_request.head.ref }}"
           dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
           if [ "$HEAD_REF" = "main-dev" ]; then
             echo "Releasing Next Stable from Main Development"
@@ -93,6 +94,7 @@ jobs:
       - name: Generate Release Notes
         shell: bash
         run: |
+          HEAD_REF=$"${{ github.event.pull_request.head.ref }}"
           if [ "$HEAD_REF" = "main-dev" ]; then
             dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
           else
