@@ -88,6 +88,7 @@ jobs:
           fi
 
       - name: Building Shipping Release DeployItSmart ;)
+        shell: bash
         run: bash -e .github/workflows/composition/compile_output.sh
         env:
           VERSION_NEXT: ${{ steps.version_control.outputs.version_next }}

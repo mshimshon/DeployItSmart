@@ -90,11 +90,18 @@ public class LocalTrashCommitCleanerRunner : IRunner
         var commits = history.ToList();
         foreach (var item in commits) // ss
         {
+            if (item.Pushed)
+                break;
             if (item != lastCommit)
-                if (item.CountReleaseToken() <= 0 || item.CountDirtyToken() > 0)
+            {
+                var countReleaseToken = item.CountReleaseToken();
+                var countDirtyToken = item.CountDirtyToken();
+                if (countReleaseToken <= 0 || countDirtyToken > 0)
                     resetPoint = item;
                 else
                     break;
+            }
+
 
             foreach (var itemTokens in item.TokenMessages)
             {
