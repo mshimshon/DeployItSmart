@@ -345,7 +345,7 @@ public class GenerateChangeLogRunner : IRunner
             if (isPreview && currentPrerelease != default && currentPrerelease > currentVersion)
                 currentVersion = currentPrerelease;
 
-        var commits = await _getTrackCommitMessages.GetHistory(currentVersion!.ToString());
+        var commits = await _getTrackCommitMessages.GetHistory(CommitSearchConfig.SinceTag != default ? CommitSearchConfig.SinceTag : currentVersion!.ToString());
         // Get Structure commit and transform to reguler commit structure one message per commit per type then process 0732775004
         Dictionary<TrackerReleaseType, List<CommitInfoStructure>> newCommits = new()
         {
