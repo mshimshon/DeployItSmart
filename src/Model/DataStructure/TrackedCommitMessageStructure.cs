@@ -51,4 +51,13 @@ public record class TrackedCommitMessageStructure
 				count += item.Value.Count;
 		return count;
 	}
+
+	public int CountWipToken()
+	{
+		int count = 0;
+		foreach (var item in TokenDirtyMessages)
+			if (item.Key == TrackerDirtyType.WorkInProgress)
+				count += item.Value.Count;
+		return count;
+	}
 }

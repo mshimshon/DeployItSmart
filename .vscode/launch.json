@@ -45,6 +45,7 @@
             "options": [
                 "GenerateChangeLogRunner",
                 "GenerateDevMessagesRunner",
+                "GetCrashDirtyPrePushRunner",
                 "GetCommitInfoSinceRunner",
                 "GenerateCustomConfigRunner",
                 "GetTrackCommitMessagesRunner",
