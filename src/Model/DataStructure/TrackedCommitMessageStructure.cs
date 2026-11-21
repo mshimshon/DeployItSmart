@@ -5,6 +5,7 @@ namespace DeployItSmart.Model.DataStructure;
 public record class TrackedCommitMessageStructure
 {
 	public string CommitId { get; init; } = default!;
+	public bool Pushed { get; init; }
 	public string OriginalMessage { get; init; } = string.Empty;
 	public Dictionary<TrackerReleaseType, List<string>> TokenMessages { get; init; } = new()
 	{

@@ -92,7 +92,8 @@ public class GetTrackCommitMessagesRunner : IRunner
                 Author = uncleanItem.Author,
                 CommitId = uncleanItem.CommitId,
                 TokenDirtyMessages = uncleanItem.TokenDirtyMessages,
-                OriginalMessage = uncleanItem.OriginalMessage
+                OriginalMessage = uncleanItem.OriginalMessage,
+                Pushed = uncleanItem.Pushed
             };
             Dictionary<TrackerReleaseType, List<string>> cleanedTokenMessages = cleanedItem.TokenMessages;
             // 1. MAJOR / BREAKING CHANGES (Highest Priority)
@@ -135,6 +136,7 @@ public class GetTrackCommitMessagesRunner : IRunner
             var entry = new TrackedCommitMessageStructure()
             {
                 TokenMessages = _messageTool.FindReleaseTokens(item.CommitMessage),
+                Pushed = item.IsRemote,
                 TokenDirtyMessages = _messageTool.FindDirtyTokens(item.CommitMessage),
                 AffectedFiles = item.AffectedFiles,
                 Author = item.Author,
