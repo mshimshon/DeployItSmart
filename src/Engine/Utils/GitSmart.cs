@@ -100,6 +100,11 @@ public class GitSmart : IGitSmart, IDisposable
                 throw new Exception($"Tag: {sinceTag} is not in the history of {_repository.Head.CanonicalName} this is most likely due to misconfiguration of repository should enable rebase merge for PR.");
         }
 
+        var remoteCommitIds = _repository.Branches
+            .Where(b => b.IsRemote)
+            .SelectMany(b => b.Commits)
+            .Select(c => c.Id)
+            .ToHashSet();
         List<CommitInfoStructure> targetedExtraction = [];
         foreach (Commit commit in _repository.Commits)
         {
@@ -114,6 +119,7 @@ public class GitSmart : IGitSmart, IDisposable
                 Author = commit.Author.Name,
                 CommitId = commit.Id.Sha,
                 CommitMessage = commit.Message,
+                IsRemote = remoteCommitIds.Contains(commit.Id),
                 AffectedFiles = relativePaths
             };
             targetedExtraction.Add(data);

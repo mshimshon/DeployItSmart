@@ -5,6 +5,7 @@ namespace DeployItSmart.Model.DataStructure;
 public record class TrackedCommitMessageStructure
 {
 	public string CommitId { get; init; } = default!;
+	public bool Pushed { get; init; }
 	public string OriginalMessage { get; init; } = string.Empty;
 	public Dictionary<TrackerReleaseType, List<string>> TokenMessages { get; init; } = new()
 	{
@@ -47,6 +48,15 @@ public record class TrackedCommitMessageStructure
 		int count = 0;
 		foreach (var item in TokenDirtyMessages)
 			if (item.Key != TrackerDirtyType.DevMessage)
+				count += item.Value.Count;
+		return count;
+	}
+
+	public int CountWipToken()
+	{
+		int count = 0;
+		foreach (var item in TokenDirtyMessages)
+			if (item.Key == TrackerDirtyType.WorkInProgress)
 				count += item.Value.Count;
 		return count;
 	}

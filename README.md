@@ -100,12 +100,12 @@ depitsmart CalculateNextReleaseVersionRunner --ghOutput # Print the value into g
 ```
 - `LocalTrashCommitCleanerRunner` Clean current commit history from dirty token squashing everything this command is used in our post-commit clean up script.
 ```bash
-# WARNING any working branch pushing dirty commit wip will requires a force push because we rewrite history and that history was pushed before clean token appeared
-# it will be not possible to push therefore if this occur, do not pull, force push using:
-# git fetch origin && git push --force-with-lease origin main
-# this will push and destroy dirty remote history it is NOT recommended on multi user branch, DO NOT PERFORM on Master branch it's dangerous and unsecure.
-
 depitsmart LocalTrashCommitCleanerRunner
+```
+
+- `GetCrashDirtyPrePushRunner` prevent git push if local history contains `wip:` tokens.
+```bash
+depitsmart GetCrashDirtyPrePushRunner
 ```
 
 ## Social Driven Development
@@ -377,11 +377,19 @@ dotnet tool install -g DeployItSmart # Constantly Update Tool
 depitsmart LocalTrashCommitCleanerRunner
 ```
 
-To activate it activate the scripts in `.githooks/post-commit` you must run the command:
+`.githooks/pre-push`
+```bash
+#!/bin/sh
+# No need to reupdate nuget, we can assume post-commit took care of that already
+#dotnet tool install -g DeployItSmart
+depitsmart GetCrashDirtyPrePushRunner
+```
+
+To activate it activate the scripts in `.githooks` you must run the command:
 
 `git config core.hooksPath .githooks`
 
-In Git Bash, make the hook executable with `chmod +x .githooks/post-commit`. Git runs it before each push; a nonzero exit from the helper blocks the push, allowing you to address any issues first. Hooks are local to each clone and are not shared automatically, so each contributor must install the hook in their own checkout.
+In Git Bash, make the hook executable with `chmod +x .githooks`. Git runs it before each push; a nonzero exit from the helper blocks the push, allowing you to address any issues first. Hooks are local to each clone and are not shared automatically, so each contributor must install the hook in their own checkout.
 
 
 ## Visual Studio Code (Important)
