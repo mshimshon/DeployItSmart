@@ -76,8 +76,9 @@ jobs:
         shell: bash
         run: bash -e .github/workflows/composition/producing_output.sh
         env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }} # this correspond to the CLI variable
-
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_either }}
+          VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
+          BRANCH:  ${{ github.ref_name }}
       - name: Generate Release Notes
         if: steps.target.outputs.channel == 'release'
         shell: bash
@@ -92,15 +93,16 @@ jobs:
         shell: bash
         run: bash -e .github/workflows/composition/validate_output.sh
         env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }} # this correspond to the CLI variable
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_either }}
+          VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
+          BRANCH:  ${{ github.ref_name }}
 
       # This steps saves environment variable to import in the deployment flow.
       - name: Save Variables for Deploy
         shell: bash
         run: |
           mkdir -p /tmp/artifacts/output
-          echo "version_next=${{ steps.version_control.outputs.version_next }}" >> /tmp/artifacts/output/build.env
-          echo "version_current=${{ steps.version_control.outputs.version_current }}" >> /tmp/artifacts/output/build.env
+          echo "version_next=${{ steps.version_control.outputs.version_either }}" >> /tmp/artifacts/output/build.env
           echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
           echo "channel=${{ steps.target.outputs.channel }}" >> /tmp/artifacts/output/build.env
           ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"

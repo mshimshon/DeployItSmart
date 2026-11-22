@@ -34,6 +34,7 @@ public class CalculateNextReleaseVersionRunner : IRunner
     {
         var version = await GetNextVersion();
         if (VersionRunnerConfig.GithubOutput)
+        {
             if (VersionRunnerConfig.IsPreviewMode)
             {
                 GithubOutput("version_next_preview", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
@@ -42,6 +43,10 @@ public class CalculateNextReleaseVersionRunner : IRunner
             }
             else
                 GithubOutput("version_next", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
+            GithubOutput("version_either", version.ToString(), VersionRunnerConfig.GithubOutputNullable);
+
+        }
+
         Console.WriteLine(version);
     }
 

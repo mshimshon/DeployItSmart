@@ -34,8 +34,10 @@ jobs:
         run: |
           MSG="${{ github.event.head_commit.message || github.event.workflow_run.head_commit.message }}"
           if [[ "$MSG" == *"release~"* ]]; then
+            echo "Release"
             echo "channel=release" >> "$GITHUB_OUTPUT"
           else
+            echo "Preview"
             echo "channel=preview" >> "$GITHUB_OUTPUT"
           fi
 
@@ -77,7 +79,7 @@ jobs:
       - name: Building Shipping Release DeployItSmart ;)
         run: bash -e .github/workflows/composition/compile_output.sh
         env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next_preview }}
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_either }}
           VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
           BRANCH:  ${{ github.ref_name  }}
 
@@ -98,7 +100,7 @@ jobs:
         shell: bash
         run: bash -e .github/workflows/composition/validate_output.sh
         env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next_preview }}
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_either }}
           VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
           BRANCH:  ${{ github.ref_name }}
 
@@ -106,8 +108,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/artifacts/output
-          echo "version_next=${{ steps.version_control.outputs.version_next_preview }}" >> /tmp/artifacts/output/build.env
-          echo "version_current=${{ steps.version_control.outputs.version_current_preview }}" >> /tmp/artifacts/output/build.env
+          echo "version_next=${{ steps.version_control.outputs.version_either }}" >> /tmp/artifacts/output/build.env
           echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
           echo "channel=${{ steps.target.outputs.channel }}" >> /tmp/artifacts/output/build.env
           ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"

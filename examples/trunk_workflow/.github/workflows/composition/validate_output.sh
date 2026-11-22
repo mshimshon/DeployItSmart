@@ -1,15 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-VERSION_NEXT="${VERSION_NEXT:-}"
-if [ -z "$VERSION_NEXT" ]; then
-  echo "::error::VERSION_NEXT is empty" >&2
-  exit 1
+VERSION="${VERSION_NEXT:-}"
+VERSION_NS="${VERSION_NOSUFFIX:-}"
+if [ -z "$VERSION_NS" ]; then
+    VERSION_NS="$VERSION" # IF NOT PREVIEW SAY THE VERSION NO SUFFIX, IF PREVIEW YOU GET A x.x.x HERE
 fi
+MAJOR="${VERSION_NS%%.*}"
+MAJOR_ZERO_ZERO="${MAJOR}.0.0" # FOR .NET PROJECT ASSEMBLY VERSION.
 
+BRANCH="${BRANCH:-}"
+echo "Releasing version: $VERSION"
 # Example validate excepted files to be release.
 
-echo "Releasing version: $VERSION_NEXT"
 OUTPUT="/tmp/artifacts/output"
 
 echo "Checking directory: $OUTPUT"
