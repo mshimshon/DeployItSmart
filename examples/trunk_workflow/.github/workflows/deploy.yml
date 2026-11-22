@@ -57,5 +57,6 @@ jobs:
           tag_name: v${{ steps.version_control.outputs.version_next }}
           body_path: "/tmp/artifacts/output/_.${{ steps.version_control.outputs.version_next }}.md" # Set changelog as release body
           fail_on_unmatched_files: true
+          prerelease: ${{ contains(steps.version_control.outputs.version_next, '-') }}
           files: |
             /tmp/artifacts/output/*.nupkg
