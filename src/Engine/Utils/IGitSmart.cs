@@ -21,4 +21,5 @@ public interface IGitSmart
 
     Task<List<string>> GetTagHistory();
     Task<List<CommitInfoStructure>> GetHistory(string? sinceTag);
+    Task<CommitInfoStructure> GetHeadCommit();
 }

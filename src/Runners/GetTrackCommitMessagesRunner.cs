@@ -30,10 +30,6 @@ public class GetTrackCommitMessagesRunner : IRunner
     private CommitSearchParameters CommitSearchConfig => GetConfigurationFor<CommitSearchParameters>();
     private readonly GetCommitInfoSinceRunner _getCommitInfoSince;
     private readonly MessageSearchTool _messageTool;
-    private readonly CommitFilter _gitCommitFilterOldestFirst = new CommitFilter()
-    {
-        SortBy = CommitSortStrategies.Reverse
-    };
 
 
     public GetTrackCommitMessagesRunner()

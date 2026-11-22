@@ -17,8 +17,8 @@
                 "--nonLinearMasterFix",
                 "--previewMode",
                 // "--allowUnsafeVersionFromSinceTag",
-                // "--sinceTag",
-                // "6.3.1"
+                "--sinceTag",
+                "0.5.14"
             ],
             "cwd": "${input:targetRepository}",
             "console": "internalConsole",

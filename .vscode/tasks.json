@@ -2,6 +2,39 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Act Workflow Push Release Token Build",
+            "command": "act",
+            "type": "shell",
+            "args": [
+                "workflow_dispatch",
+                "-W",
+                "examples/trunk_workflow/.github/workflows/build_explicit_release.yml",
+                "--artifact-server-path",
+                ".\\.bin\\.artifacts",
+                "-e",
+                ".github/workflows/event-dev.json",
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Act Workflow Push Release Token (Test)",
+            "command": "act",
+            "type": "shell",
+            "args": [
+                "workflow_dispatch",
+                "-W",
+                "examples/trunk_workflow/.github/workflows/deploy.yml",
+                "-e",
+                ".github/workflows/event-dev.json",
+                "--artifact-server-path",
+                ".\\.bin\\.artifacts",
+            ],
+            "problemMatcher": "$msCompile",
+            "dependsOn": [
+                "Act Workflow Push Release Token Build",
+            ],
+        },
+        {
             "label": "Act Workflow Hotfix Build",
             "command": "act",
             "type": "shell",
