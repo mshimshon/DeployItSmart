@@ -2,8 +2,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/mshimshon/DeployItSmart/blob/main/LICENSE)
 [![NuGet Version](https://img.shields.io/nuget/v/DeployItSmart)](https://www.nuget.org/packages/DeployItSmart)
 [![](https://img.shields.io/nuget/dt/DeployItSmart?label=Downloads)](https://www.nuget.org/packages/DeployItSmart)
-[![Preview](https://github.com/mshimshon/DeployItSmart/actions/workflows/build_preview.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/build_preview.yml)
-[![Stable](https://github.com/mshimshon/DeployItSmart/actions/workflows/build_release.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/build_release.yml)
+[![Build](https://github.com/mshimshon/DeployItSmart/actions/workflows/build.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/build.yml)
 [![Deploy](https://github.com/mshimshon/DeployItSmart/actions/workflows/deploy.yml/badge.svg)](https://github.com/mshimshon/DeployItSmart/actions/workflows/deploy.yml)
 
 # NOT PRODUCTION READY!
