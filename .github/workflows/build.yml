@@ -19,7 +19,14 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    if: |
+        !contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'skipci~')
+        &&
+        (
+          contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'release~')
+          ||
+          contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'preview~')
+        )
     steps:
       - name: Detect target
         id: target
