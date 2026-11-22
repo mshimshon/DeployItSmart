@@ -10,23 +10,16 @@ concurrency:
   group: deploy-${{ github.sha }}
   cancel-in-progress: false
 
+
 jobs:
-  build:
+  ReleasePreview:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       id-token: write
       contents: read
-
-    if: |
-        !contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'skipci~')
-        &&
-        (
-          contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'release~')
-          ||
-          contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'preview~')
-        )
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     steps:
       - name: Detect target
         id: target
@@ -42,72 +35,72 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 👈 CLI Tool Requires git to pull the whole history and tags
+          fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
       - name: Installing libicu Dependency!
         if: ${{ env.ACT }}
         shell: bash
         run: |
           apt-get update
           apt-get install -y libicu-dev
-
-      - name: Setup .NET for Tool
+      - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
-      - name: Installing DepItSmart!
-        shell: bash
-        run: |
-          dotnet tool install -g DeployItSmart
-          which depitsmart || true
-          echo "/root/.dotnet/tools" >> $GITHUB_PATH
-          mkdir -p /tmp/artifacts/output
 
-      # --ghOutput makes the cli assign GITHUB variable by itself
+      - name: Building DeployItSmart ;)
+        shell: bash
+        run: bash -e .github/workflows/composition/build_deployitsmart_tool.sh
+
+
       - name: Calculating Versions
         id: version_control
         shell: bash
         run: |
-          depitsmart GetCurrentReleaseVersionRunner --ghOutput
+          dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentReleaseVersionRunner --ghOutput
           if [ "${{ steps.target.outputs.channel }}" = "preview" ]; then
             echo "Preview Version"
-            depitsmart GetCurrentPreReleaseVersionRunner --ghOutput
-            depitsmart CalculateNextReleaseVersionRunner --ghOutput --previewMode
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GetCurrentPreReleaseVersionRunner --ghOutput
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput --previewMode
           elif [ "${{ steps.target.outputs.channel }}" = "release" ]; then
             echo "Release deploy"
-            depitsmart CalculateNextReleaseVersionRunner --ghOutput
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- CalculateNextReleaseVersionRunner --ghOutput
           fi
 
-
-      - name: Building Output
-        shell: bash
-        run: bash -e .github/workflows/composition/producing_output.sh
+      - name: Building Shipping Release DeployItSmart ;)
+        run: bash -e .github/workflows/composition/compile_output.sh
         env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }} # this correspond to the CLI variable
-
-      - name: Generate Release Notes
-        if: steps.target.outputs.channel == 'release'
-        shell: bash
-        run: depitsmart GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next_preview }}
+          VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
+          BRANCH:  ${{ github.ref_name  }}
 
       - name: Generate Preview Notes
         if: steps.target.outputs.channel == 'preview'
         shell: bash
-        run: depitsmart GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode
+        run: |
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits --previewMode
+
+      - name: Generate Release Notes
+        if: steps.target.outputs.channel == 'release'
+        shell: bash
+        run: |
+            dotnet run --project /tmp/deploy_scripting/src/DeployItSmart.csproj --no-build --configuration Release -- GenerateChangeLogRunner --output "/tmp/artifacts/output"  --linkCommits
+
 
       - name: Validating Output
         shell: bash
         run: bash -e .github/workflows/composition/validate_output.sh
         env:
-          VERSION_NEXT: ${{ steps.version_control.outputs.version_next }} # this correspond to the CLI variable
+          VERSION_NEXT: ${{ steps.version_control.outputs.version_next_preview }}
+          VERSION_NOSUFFIX: ${{ steps.version_control.outputs.version_next_preview_v }}
+          BRANCH:  ${{ github.ref_name }}
 
-      # This steps saves environment variable to import in the deployment flow.
       - name: Save Variables for Deploy
         shell: bash
         run: |
           mkdir -p /tmp/artifacts/output
-          echo "version_next=${{ steps.version_control.outputs.version_next }}" >> /tmp/artifacts/output/build.env
-          echo "version_current=${{ steps.version_control.outputs.version_current }}" >> /tmp/artifacts/output/build.env
+          echo "version_next=${{ steps.version_control.outputs.version_next_preview }}" >> /tmp/artifacts/output/build.env
+          echo "version_current=${{ steps.version_control.outputs.version_current_preview }}" >> /tmp/artifacts/output/build.env
           echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
           echo "channel=${{ steps.target.outputs.channel }}" >> /tmp/artifacts/output/build.env
           ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"
@@ -116,7 +109,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-assets # Label
-          path: /tmp/artifacts/output/ # whereever you saved the output.
-
-
+          path: /tmp/artifacts/output/
 
