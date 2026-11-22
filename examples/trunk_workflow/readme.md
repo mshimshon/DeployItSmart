@@ -8,6 +8,9 @@ Solo projects naturally fit this model. You work with short-lived branches, merg
 
 This tool is designed around that philosophy. Pushing to `main` automatically produces a minimal patch release unless the commit message contains `skipci~`.
 
+But you can easily configure a release pattern no based on push but rather based on token of commit merge message `release~` and `preview~` pair with the `build_explicit_release.yml` will implement the ability to
+merge PR but not necessarly trigger a release but rather will require the decided merge to trigger the release into the given channel by using one of the keywords in the merge commit message. That's my personal favorite.
+
 ## What You'll Find Here
 
 The examples in this folder demonstrate a simple but robust workflow optimized for fast execution and deployment. The goal is to minimize process overhead while maintaining a reliable release pipeline.

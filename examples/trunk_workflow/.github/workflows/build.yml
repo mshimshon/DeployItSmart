@@ -5,7 +5,7 @@ on:
     types: [closed]
     branches:
       - main
-  workflow_dispatch:
+
 
 concurrency:
   group: deploy-${{ github.sha }}
@@ -20,8 +20,10 @@ jobs:
       id-token: write
       contents: read
 
-    if: ${{ !contains(github.event.head_commit.message, 'skipci~') && !contains(github.event.workflow_run.head_commit.message, 'skipci~') }}
+    if: |
+        !contains(github.event.head_commit.message || github.event.workflow_run.head_commit.message, 'skipci~')
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -71,6 +73,7 @@ jobs:
           mkdir -p /tmp/artifacts/output
           echo "version_next=${{ steps.version_control.outputs.version_next }}" >> /tmp/artifacts/output/build.env
           echo "version_current=${{ steps.version_control.outputs.version_current }}" >> /tmp/artifacts/output/build.env
+          echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
           echo "trigger_branch=${{ github.ref_name }}" >> /tmp/artifacts/output/build.env
           ls -laR /tmp/artifacts/output || echo "no /tmp/artifacts/output"
 

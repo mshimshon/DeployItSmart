@@ -59,7 +59,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # 👈 This forces GitHub to pull ALL history and tags
-
+      - name: Installing libicu Dependency!
+        if: ${{ env.ACT }}
+        shell: bash
+        run: |
+          apt-get update
+          apt-get install -y libicu-dev
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:

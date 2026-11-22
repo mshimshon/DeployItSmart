@@ -159,4 +159,27 @@ public class GitSmart : IGitSmart, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    public Task<CommitInfoStructure> GetHeadCommit()
+    {
+        var headCommit = _repository.Commits.FirstOrDefault();
+        if (headCommit == default)
+            throw new Exception($"No Commit HEAD Found on Branch '{_repository.Head.FriendlyName}'");
+        Tree? parentTree = headCommit.Parents.FirstOrDefault()?.Tree;
+        TreeChanges changes = _repository.Diff.Compare<TreeChanges>(parentTree, headCommit.Tree);
+        List<string> relativePaths = changes.Select(c => c.Path).ToList();
+        var remoteCommitIds = _repository.Branches
+            .Where(b => b.IsRemote)
+            .SelectMany(b => b.Commits)
+            .Select(c => c.Id)
+            .ToHashSet();
+        var data = new CommitInfoStructure()
+        {
+            Author = headCommit.Author.Name,
+            CommitId = headCommit.Id.Sha,
+            CommitMessage = headCommit.Message,
+            IsRemote = remoteCommitIds.Contains(headCommit.Id),
+            AffectedFiles = relativePaths
+        };
+        return Task.FromResult(data);
+    }
 }
